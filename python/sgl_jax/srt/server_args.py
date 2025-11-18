@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import tempfile
+from typing import Optional
 
 import jax
 
@@ -123,6 +124,8 @@ class ServerArgs:
     enable_tokenizer_batch_encode: bool = False
     disable_overlap_schedule: bool = False
     enable_precision_tracer: bool = False
+    disable_fast_image_processor: bool = False
+    keep_mm_feature_on_device: bool = False
 
     # Kernel backend
     attention_backend: str | None = "fa"
@@ -164,6 +167,10 @@ class ServerArgs:
     lora_eviction_policy: str = "lru"
     enable_static_lora: bool | None = None
     lora_scaling: float | None = None
+    # For Multi-Modal
+    mm_max_concurrent_calls: int = 32
+    mm_per_request_timeout: float = 10.0
+    enable_broadcast_mm_inputs_process: bool = False
 
     def __post_init__(self):
         # Set missing default values
@@ -963,6 +970,34 @@ class ServerArgs:
             type=float,
             default=ServerArgs.lora_scaling,
             help="Lora scaling is required for static LoRA, scaling = alpha/rank",
+        # For Multi-Modal
+        parser.add_argument(
+            "--mm-max-concurrent-calls",
+            type=int,
+            default=ServerArgs.mm_max_concurrent_calls,
+            help="The max concurrent calls for async mm data processing.",
+        )
+        parser.add_argument(
+            "--mm-per-request-timeout",
+            type=int,
+            default=ServerArgs.mm_per_request_timeout,
+            help="The timeout for each multi-modal request in seconds.",
+        )
+        parser.add_argument(
+            "--enable-broadcast-mm-inputs-process",
+            action="store_true",
+            default=ServerArgs.enable_broadcast_mm_inputs_process,
+            help="Enable broadcast mm-inputs process in scheduler.",
+        )
+        parser.add_argument(
+            "--keep-mm-feature-on-device",
+            action="store_true",
+            help="Keep multimodal feature tensors on device after processing to save D2H copy.",
+        )
+        parser.add_argument(
+            "--disable-fast-image-processor",
+            action="store_true",
+            help="Adopt base image processor instead of fast image processor.",
         )
 
     @classmethod
