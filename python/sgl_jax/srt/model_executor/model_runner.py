@@ -628,6 +628,16 @@ class ModelRunner:
             self.swa_max_total_num_tokens,
         )
 
+    @property
+    def model_is_mrope(self) -> bool:
+        """Detect if the model has "mrope" rope_scaling type.
+        mrope requires keep "rope_deltas" between prompt and decoding phases."""
+        rope_scaling = getattr(self.model_config.hf_text_config, "rope_scaling", {})
+        if rope_scaling is None:
+            return False
+        is_mrope_enabled = "mrope_section" in rope_scaling
+        return is_mrope_enabled
+        
 
 class MockModelRunner(ModelRunner):
     def __init__(
