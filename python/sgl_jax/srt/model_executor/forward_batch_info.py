@@ -159,6 +159,8 @@ class ForwardBatch:
     # For extend
     extend_prefix_lens: jax.Array | None = None
     extend_seq_lens: jax.Array | None = None
+    extend_prefix_lens_cpu: Optional[List[int]] = None
+    extend_seq_lens_cpu: Optional[List[int]] = None
 
     trace_request_ids: list[str] | None = None
     trace_request_objects: list | None = None
@@ -272,6 +274,9 @@ class ForwardBatch:
             ),
         )
 
+        extend_prefix_lens_cpu = batch.extend_prefix_lens
+        extend_seq_lens_cpu = batch.extend_seq_lens
+        
         obj = cls(
             bid=batch.bid,
             forward_mode=batch.forward_mode,
@@ -286,6 +291,8 @@ class ForwardBatch:
             cache_loc=cache_loc,
             extend_prefix_lens=extend_prefix_lens,
             extend_seq_lens=extend_seq_lens,
+            extend_prefix_lens_cpu=extend_prefix_lens_cpu,
+            extend_seq_lens_cpu=extend_seq_lens_cpu,
             attn_backend=model_runner.attn_backend,
             spec_info=batch.spec_info,
             spec_algorithm=batch.spec_algorithm,
