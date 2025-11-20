@@ -299,9 +299,13 @@ class Qwen2Model(nnx.Module):
         self,
         forward_batch: ForwardBatch,
         token_to_kv_pool: KVCache,
+        input_embeds: jax.Array = None,
     ):
         residual = None
-        hidden_states = self.embed_tokens(forward_batch.input_ids)
+        if input_embeds is None:
+            hidden_states = self.embed_tokens(forward_batch.input_ids)
+        else:
+            hidden_states = input_embeds
         layers_kv_fused = []
         layers_callback_flag = []
         for layer in self.layers:
