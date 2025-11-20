@@ -3,7 +3,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, TYPE_CHECKING, Union, Dict, List, Optional
 
 from sgl_jax.srt.managers.schedule_batch import BaseFinishReason
 from sgl_jax.srt.utils import ImageData
