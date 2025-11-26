@@ -27,7 +27,7 @@ import zmq.asyncio
 from fastapi import BackgroundTasks
 
 from sgl_jax.srt.configs.model_config import ModelConfig
-from sgl_jax.srt.hf_transformers_utils import get_processor, get_tokenizer
+from sgl_jax.srt.hf_transformers_utils import get_processor, get_tokenizer, get_tokenizer_from_processor
 from sgl_jax.srt.managers.io_struct import (
     AbortReq,
     BatchEmbeddingOut,
@@ -175,17 +175,11 @@ class TokenizerManager:
                     raise e
             transport_mode = "default"
 
-            _tokenizer = get_tokenizer(
-                server_args.tokenizer_path,
-                tokenizer_mode=server_args.tokenizer_mode,
-                trust_remote_code=server_args.trust_remote_code,
-                revision=server_args.revision,
-            )
             # We want to parallelize the image pre-processing so we create an executor for it
             # We create mm_processor for any skip_tokenizer_init to make sure we still encode
             # images even with skip_tokenizer_init=False.
             self.mm_processor = get_mm_processor(
-                self.model_config.hf_config, server_args, _processor, _tokenizer, transport_mode
+                self.model_config.hf_config, server_args, _processor, transport_mode
             )
             self.mm_data_processor = AsyncMMDataProcessor(
                 self.mm_processor,
@@ -197,7 +191,7 @@ class TokenizerManager:
                 self.tokenizer = self.processor = None
             else:
                 self.processor = _processor
-                self.tokenizer = _tokenizer
+                self.tokenizer = get_tokenizer_from_processor(self.processor)
                 os.environ["TOKENIZERS_PARALLELISM"] = "false"
         else:
             self.mm_processor = self.processor = None
