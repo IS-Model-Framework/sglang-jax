@@ -14,11 +14,10 @@ import os
 import signal
 import threading
 from collections.abc import AsyncIterator, Iterator
-from typing import Any
+from typing import Any, Optional
 
 import uvloop
 import zmq
-import zmq.asyncio
 
 # ruff: noqa: E402
 # Fix a bug of Python threading
@@ -35,6 +34,7 @@ from sgl_jax.srt.managers.io_struct import (
     GenerateReqInput,
     ReleaseMemoryOccupationReqInput,
     ResumeMemoryOccupationReqInput,
+    MultimodalDataInputFormat,
 )
 from sgl_jax.srt.managers.scheduler import (
     run_scheduler_loop_thread_after_create,
@@ -113,6 +113,7 @@ class Engine(EngineBase):
         sampling_params: list[dict] | dict | None = None,
         # The token ids for text; one can either specify text or input_ids.
         input_ids: list[list[int]] | list[int] | None = None,
+        image_data: Optional[MultimodalDataInputFormat] = None,
         return_logprob: list[bool] | bool | None = False,
         logprob_start_len: list[int] | int | None = None,
         top_logprobs_num: list[int] | int | None = None,
@@ -130,6 +131,7 @@ class Engine(EngineBase):
         obj = GenerateReqInput(
             text=prompt,
             input_ids=input_ids,
+            image_data=image_data,
             sampling_params=sampling_params,
             return_logprob=return_logprob,
             logprob_start_len=logprob_start_len,
