@@ -8,6 +8,7 @@ from typing import Any, TYPE_CHECKING, Union, Dict, List, Optional
 
 from sgl_jax.srt.managers.schedule_batch import BaseFinishReason
 from sgl_jax.srt.utils import ImageData
+from sgl_jax.srt.multimodal.mm_utils import has_valid_data
 
 # Handle serialization of Image for pydantic
 if TYPE_CHECKING:
