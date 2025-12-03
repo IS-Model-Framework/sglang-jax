@@ -103,6 +103,40 @@ class TestEvalAccuracyLarge(CustomTestCase):
         print("mgsm en metrics", metrics)
         self.assertGreater(metrics["score"], 0.4)
 
+    def test_mmmu(self):
+        args = SimpleNamespace(
+            base_url=self.base_url,
+            model=self.model,
+            eval_name="mmmu",
+            num_examples=100,
+            num_threads=32,
+        )
+
+        metrics = run_eval(args)
+
+        if is_in_ci():
+            write_github_step_summary(f"### test_mmmu\n" f'{metrics["score"]=:.4f}\n')
+        print("mmmu metrics", metrics)
+
+        self.assertGreater(metrics["score"], 0.1)
+
+    def test_mmmu_pro(self):
+        args = SimpleNamespace(
+            base_url=self.base_url,
+            model=self.model,
+            eval_name="mmmu_pro",
+            num_examples=100,
+            num_threads=32,
+        )
+
+        metrics = run_eval(args)
+
+        if is_in_ci():
+            write_github_step_summary(f"### test_mmmu_pro\n" f'{metrics["score"]=:.4f}\n')
+        print("mmmu_pro metrics", metrics)
+
+        self.assertGreater(metrics["score"], 0.1)
+
 
 if __name__ == "__main__":
     unittest.main()
