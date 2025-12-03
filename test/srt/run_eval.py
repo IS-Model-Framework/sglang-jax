@@ -48,6 +48,14 @@ def run_eval(args):
         from eval.simple_eval_humaneval import HumanEval
 
         eval_obj = HumanEval(args.num_examples, args.num_threads)
+    elif args.eval_name == "mmmu":
+        from eval.simple_eval_mmmu_vlm import MMMUVLMEval
+
+        eval_obj = MMMUVLMEval(args.num_examples, args.num_threads)
+    elif args.eval_name == "mmmu_pro":
+        from eval.simple_eval_mmmu_pro import MMMUPro
+
+        eval_obj = MMMUPro(args.num_examples, args.num_threads)
     else:
         raise ValueError(f"Invalid eval name: {args.eval_name}")
 
