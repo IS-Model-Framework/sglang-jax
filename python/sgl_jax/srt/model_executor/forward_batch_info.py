@@ -160,8 +160,8 @@ class ForwardBatch:
     # For extend
     extend_prefix_lens: jax.Array | None = None
     extend_seq_lens: jax.Array | None = None
-    extend_prefix_lens_cpu: Optional[List[int]] = None
-    extend_seq_lens_cpu: Optional[List[int]] = None
+    extend_prefix_lens_cpu: Optional[jax.Array[int]] = None
+    extend_seq_lens_cpu: Optional[jax.Array[int]] = None
 
     # For LoRA
     lora_ids: list[str] | None = None
@@ -176,7 +176,7 @@ class ForwardBatch:
     spec_algorithm: SpeculativeAlgorithm = None
     capture_hidden_mode: CaptureHiddenMode = None
     # For multimodal
-    mm_inputs: Optional[List[MultimodalInputs]] = None
+    mm_inputs: Optional[jax.Array[MultimodalInputs]] = None
     mrope_positions: jax.Array | None = None
 
     def tree_flatten(self):
@@ -203,6 +203,9 @@ class ForwardBatch:
             "batch_size": self.batch_size,
             "spec_algorithm": self.spec_algorithm,
             "capture_hidden_mode": self.capture_hidden_mode,
+            "mm_inputs": self.mm_inputs,
+            "extend_prefix_lens_cpu": self.extend_prefix_lens_cpu,
+            "extend_seq_lens_cpu": self.extend_seq_lens_cpu,
         }
         return (children, aux_data)
 
@@ -214,6 +217,9 @@ class ForwardBatch:
         obj.batch_size = aux_data["batch_size"]
         obj.spec_algorithm = aux_data["spec_algorithm"]
         obj.capture_hidden_mode = aux_data["capture_hidden_mode"]
+        obj.mm_inputs = aux_data["mm_inputs"]
+        obj.extend_prefix_lens_cpu = aux_data["extend_prefix_lens_cpu"]
+        obj.extend_seq_lens_cpu = aux_data["extend_seq_lens_cpu"]
         obj.trace_request_ids = None
         obj.trace_request_objects = None
 
@@ -251,6 +257,8 @@ class ForwardBatch:
             "lora_scalings",
             "lora_token_indices",
             "lora_ranks",
+            "extend_prefix_lens_cpu",
+            "extend_seq_lens_cpu"
         ]:
             value = getattr(self, field_name, None)
             if value is not None and isinstance(value, jax.Array):
