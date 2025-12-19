@@ -970,6 +970,8 @@ class ServerArgs:
             type=float,
             default=ServerArgs.lora_scaling,
             help="Lora scaling is required for static LoRA, scaling = alpha/rank",
+        )
+        
         # For Multi-Modal
         parser.add_argument(
             "--mm-max-concurrent-calls",

@@ -237,8 +237,7 @@ class ForwardBatch:
         obj.lora_token_indices = children[11]
         obj.lora_ranks = children[12]
         obj.spec_info = children[13]
-        obj.spec_info = children[10]
-        obj.mrope_positions = children[11]
+        obj.mrope_positions = children[14]
         return obj
 
     def __repr__(self) -> str:

@@ -214,7 +214,9 @@ class JAXModelLoader(DefaultModelLoader):
     def _get_model(self, model_class: Any, model_config: ModelConfig) -> nnx.Module:
         with jax.set_mesh(self.mesh):
             model = nnx.eval_shape(
-                model_config.hf_config, dtype=model_config.dtype, mesh=self.mesh
+                lambda: model_class(
+                    model_config.hf_config, dtype=model_config.dtype, mesh=self.mesh,
+                )
             )
         model.load_weights(model_config)
         return model
