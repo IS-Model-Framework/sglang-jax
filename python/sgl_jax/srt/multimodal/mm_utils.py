@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 import jax
 import jax.numpy as jnp
+from jax import lax
 from flax import nnx
 
 from sgl_jax.srt.managers.schedule_batch import (
@@ -172,45 +173,43 @@ def _get_chunked_prefill_embedding(
     data_embedding_func: Callable[[List[MultimodalDataItem]], jax.Array],
     embedding_items: List[MultimodalDataItem],
     items_size: List[int],
-    prefix_length: List[int],
-    extend_length: List[int],
+    prefix_length: jax.Array,
+    extend_length: jax.Array,
     items_offset_list: List[List[Tuple[int, int]]],
 ) -> Optional[jax.Array]:
-    # Calculate embedding for each request, try to get it from cache to avoid repeated calculation
+    
     embedding_list = []
-    # FIXME(Xinyuan): temporary workaround for eagle3, which may have len(items_size) > len(prefix_length)
     max_iterations = min(len(items_size) - 1, len(prefix_length))
+    
     for i in range(max_iterations):
         if items_size[i] == items_size[i + 1]:
             continue
+
         embedding_items_per_req = embedding_items[items_size[i]:items_size[i + 1]]
-        items_offset = items_offset_list[i]
-        assert items_offset is not None, items_offset
-        # if all items has been prefixed, we do not need to calculate embedding
-        if all([offset_end < prefix_length[i] for _, offset_end in items_offset]):
-            continue
         item_hashes = [item.hash for item in embedding_items_per_req]
-        embedding_items_hash = MultiModalStaticCache.combine_hashes(item_hashes)
+        
         embedding_per_req = embedding_cache.get(item_hashes)
         if embedding_per_req is None:
             embedding_per_req = data_embedding_func(embedding_items_per_req)
-            if not embedding_cache.set(embedding_items_hash, embedding_per_req):
-                print_warning_once(
-                    "Multimodal embedding cache is full. This typically occurs when a single "
-                    "embedding exceeds the cache size limit. Consider increasing the "
-                    "`SGLANG_VLM_CACHE_SIZE_MB` environment variable or reducing the input "
-                    "embedding size."
-                )
+            embedding_cache.set(MultiModalStaticCache.combine_hashes(item_hashes), embedding_per_req)
 
-        embedding_per_req_chunk, _, _ = get_embedding_chunk(
-            embedding=embedding_per_req,
-            extend_prefix_len=prefix_length[i],
-            extend_seq_len=extend_length[i] if i < len(extend_length) else 0,
-            items_offset=items_offset,
+        items_offset = jnp.array(items_offset_list[i]) # shape: (num_items, 2)
+        offset_ends = items_offset[:, 1]
+        
+        all_items_prefixed = jnp.all(offset_ends < prefix_length[i])
+
+        actual_embedding = lax.cond(
+            all_items_prefixed,
+            lambda _: jnp.zeros(embedding_per_req.shape, dtype=embedding_per_req.dtype),
+            lambda _: embedding_per_req,
+            operand=None
         )
-        embedding_list.append(embedding_per_req_chunk)
+        
+        embedding_list.append(actual_embedding)
+
     if len(embedding_list) == 0:
         return None
+    
     return jnp.concatenate(embedding_list, axis=0)
 
 
@@ -503,12 +502,12 @@ def general_mm_embed_routine(
         ]
         extend_prefix_lens = [
             prefix_len
-            for i, prefix_len in enumerate(forward_batch.extend_prefix_lens_cpu)
+            for i, prefix_len in enumerate(forward_batch.extend_prefix_lens)
             if forward_batch.seq_lens[i] is not None
         ]
         extend_seq_lens = [
             seq_len
-            for i, seq_len in enumerate(forward_batch.extend_seq_lens_cpu)
+            for i, seq_len in enumerate(forward_batch.extend_seq_lens)
             if forward_batch.seq_lens[i] is not None
         ]
         inputs_embeds, other_info = embed_mm_inputs(

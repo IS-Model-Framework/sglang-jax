@@ -268,6 +268,7 @@ class MultimodalDataItem:
         self.set_pad_value()
 
 
+
 @dataclasses.dataclass
 class MultimodalInputs:
     """The multimodal data related inputs."""
@@ -378,6 +379,7 @@ class MultimodalInputs:
                     setattr(self, key, getattr(other, key, None))
         # other args would be kept intact
 
+    
         
 class Req:
     """The input and output status of a request."""

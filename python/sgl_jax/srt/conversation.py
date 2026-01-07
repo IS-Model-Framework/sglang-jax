@@ -225,7 +225,7 @@ class Conversation:
 
     def append_image(self, image_url: str, detail: str = "auto"):
         """Append image data."""
-        self.image_data.append({"url": image_url, "detail": detail})
+        self.image_data.append(image_url)
 
     def append_video(self, video_url: str):
         """Append video data."""

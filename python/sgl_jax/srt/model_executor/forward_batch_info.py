@@ -160,8 +160,6 @@ class ForwardBatch:
     # For extend
     extend_prefix_lens: jax.Array | None = None
     extend_seq_lens: jax.Array | None = None
-    extend_prefix_lens_cpu: list[int] | None = None
-    extend_seq_lens_cpu: list[int] | None = None
 
     # For LoRA
     lora_ids: list[str] | None = None
@@ -196,6 +194,7 @@ class ForwardBatch:
             self.lora_ranks,
             self.spec_info,
             self.mrope_positions,
+            self.mm_inputs,
         )
 
         aux_data = {
@@ -203,9 +202,6 @@ class ForwardBatch:
             "batch_size": self.batch_size,
             "spec_algorithm": self.spec_algorithm,
             "capture_hidden_mode": self.capture_hidden_mode,
-            "mm_inputs": self.mm_inputs,
-            "extend_prefix_lens_cpu": self.extend_prefix_lens_cpu,
-            "extend_seq_lens_cpu": self.extend_seq_lens_cpu,
         }
         return (children, aux_data)
 
@@ -217,9 +213,6 @@ class ForwardBatch:
         obj.batch_size = aux_data["batch_size"]
         obj.spec_algorithm = aux_data["spec_algorithm"]
         obj.capture_hidden_mode = aux_data["capture_hidden_mode"]
-        obj.mm_inputs = aux_data["mm_inputs"]
-        obj.extend_prefix_lens_cpu = aux_data["extend_prefix_lens_cpu"]
-        obj.extend_seq_lens_cpu = aux_data["extend_seq_lens_cpu"]
         obj.trace_request_ids = None
         obj.trace_request_objects = None
 
@@ -238,6 +231,7 @@ class ForwardBatch:
         obj.lora_ranks = children[12]
         obj.spec_info = children[13]
         obj.mrope_positions = children[14]
+        obj.mm_inputs = children[15]
         return obj
 
     def __repr__(self) -> str:
@@ -341,8 +335,6 @@ class ForwardBatch:
             lora_scalings=lora_scalings,
             lora_token_indices=lora_token_indices,
             lora_ranks=lora_ranks,
-            extend_prefix_lens_cpu=batch.extend_prefix_lens,
-            extend_seq_lens_cpu=batch.extend_seq_lens,
             attn_backend=model_runner.attn_backend,
             spec_info=batch.spec_info,
             spec_algorithm=batch.spec_algorithm,
