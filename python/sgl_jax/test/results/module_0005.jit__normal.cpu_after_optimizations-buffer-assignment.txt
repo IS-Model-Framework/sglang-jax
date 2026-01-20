@@ -1,0 +1,648 @@
+BufferAssignment:
+allocation 0: size 7680000, output shape is |f32[3,10000,64]|, maybe-live-out:
+ value: <1 compare.3 @0> (size=1,offset=0): pred[]
+ value: <103 copy.11 @0> (size=7680000,offset=0): u32[3,10000,64]{2,1,0}
+ value: <222 broadcast_multiply_fusion.clone @0> (size=7680000,offset=0): f32[3,10000,64]{2,1,0}
+allocation 1: size 4, constant:
+ value: <99 constant.67 @0> (size=4,offset=0): s32[]
+allocation 2: size 16, constant:
+ value: <270 constant.20 @0> (size=16,offset=0): u32[4]{0}
+allocation 3: size 16, constant:
+ value: <272 constant.21 @0> (size=16,offset=0): u32[4]{0}
+allocation 4: size 8, parameter 0, shape |u32[2]| at ShapeIndex {}:
+ value: <266 Arg_0.1 @0> (size=8,offset=0): u32[2]{0}
+allocation 5: size 4, constant:
+ value: <264 constant.15 @0> (size=4,offset=0): s32[]
+allocation 6: size 4, constant:
+ value: <0 constant.66 @0> (size=4,offset=0): s32[]
+allocation 7: size 23040772, preallocated-temp:
+ value: <61 broadcast_add_fusion.clone @0> (size=7680000,offset=7680064): u32[3,10000,64]{2,1,0}
+ value: <97 broadcast_add_fusion.1.clone @0> (size=7680000,offset=15360064): u32[3,10000,64]{2,1,0}
+ value: <98 copy.9 @0> (size=4,offset=23040384): s32[]
+ value: <100 add.63 @0> (size=4,offset=23040448): s32[]
+ value: <101 copy.12 @0> (size=4,offset=23040704): u32[]
+ value: <102 copy.15 @0> (size=16,offset=23040064): u32[4]{0}
+ value: <104 copy.10 @0> (size=7680000,offset=64): u32[3,10000,64]{2,1,0}
+ value: <105 copy.13 @0> (size=4,offset=23040320): u32[]
+ value: <106 copy.20 @0> (size=4,offset=23040512): u32[]
+ value: <107 copy.14 @0> (size=4,offset=23040768): u32[]
+ value: <108 copy.21 @0> (size=4,offset=23040576): u32[]
+ value: <109 copy.22 @0> (size=4,offset=23040640): u32[]
+ value: <110 copy.16 @0> (size=16,offset=23040128): u32[4]{0}
+ value: <111 copy.23 @0> (size=16,offset=23040192): u32[4]{0}
+ value: <112 copy.24 @0> (size=16,offset=23040256): u32[4]{0}
+ value: <113 tuple.14{} @0> (size=64,offset=0): (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0})
+ value: <241 broadcast_add_fusion.2.clone @0> (size=7680000,offset=7680064): u32[3,10000,64]{2,1,0}
+ value: <263 broadcast_add_fusion.3.clone @0> (size=7680000,offset=15360064): u32[3,10000,64]{2,1,0}
+ value: <265 copy.25 @0> (size=4,offset=23040448): s32[]
+ value: <267 slice_bitcast_fusion @0> (size=4,offset=23040512): u32[]
+ value: <268 xor_xor_fusion @0> (size=4,offset=23040576): u32[]
+ value: <269 slice_bitcast_fusion.1 @0> (size=4,offset=23040640): u32[]
+ value: <271 copy.26 @0> (size=16,offset=23040192): u32[4]{0}
+ value: <273 copy.27 @0> (size=16,offset=23040256): u32[4]{0}
+ value: <274 tuple.12{} @0> (size=64,offset=0): (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0})
+ value: <275 arg_tuple.3{} (phi) @0> (size=64,offset=0): (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0})
+ value: <276 arg_tuple.4{} (phi) @0> (size=64,offset=0): (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0})
+ value: <277 arg_tuple.3{0} (phi) @0> (size=4,offset=23040448): s32[]
+ value: <278 arg_tuple.3{1} (phi) @0> (size=7680000,offset=15360064): u32[3,10000,64]{2,1,0}
+ value: <279 arg_tuple.3{2} (phi) @0> (size=7680000,offset=7680064): u32[3,10000,64]{2,1,0}
+ value: <280 arg_tuple.3{3} (phi) @0> (size=4,offset=23040512): u32[]
+ value: <281 arg_tuple.3{4} (phi) @0> (size=4,offset=23040576): u32[]
+ value: <282 arg_tuple.3{5} (phi) @0> (size=4,offset=23040640): u32[]
+ value: <283 arg_tuple.3{6} (phi) @0> (size=16,offset=23040192): u32[4]{0}
+ value: <284 arg_tuple.3{7} (phi) @0> (size=16,offset=23040256): u32[4]{0}
+ value: <285 arg_tuple.4{0} (phi) @0> (size=4,offset=23040448): s32[]
+ value: <286 arg_tuple.4{1} (phi) @0> (size=7680000,offset=15360064): u32[3,10000,64]{2,1,0}
+ value: <287 arg_tuple.4{2} (phi) @0> (size=7680000,offset=7680064): u32[3,10000,64]{2,1,0}
+ value: <288 arg_tuple.4{3} (phi) @0> (size=4,offset=23040512): u32[]
+ value: <289 arg_tuple.4{4} (phi) @0> (size=4,offset=23040576): u32[]
+ value: <290 arg_tuple.4{5} (phi) @0> (size=4,offset=23040640): u32[]
+ value: <291 arg_tuple.4{6} (phi) @0> (size=16,offset=23040192): u32[4]{0}
+ value: <292 arg_tuple.4{7} (phi) @0> (size=16,offset=23040256): u32[4]{0}
+ value: <293 while.3{} (phi) @0> (size=64,offset=0): (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0})
+ value: <294 while.3{0} (phi) @0> (size=4,offset=23040448): s32[]
+ value: <295 while.3{1} (phi) @0> (size=7680000,offset=15360064): u32[3,10000,64]{2,1,0}
+ value: <296 while.3{2} (phi) @0> (size=7680000,offset=7680064): u32[3,10000,64]{2,1,0}
+ value: <297 while.3{3} (phi) @0> (size=4,offset=23040512): u32[]
+ value: <298 while.3{4} (phi) @0> (size=4,offset=23040576): u32[]
+ value: <299 while.3{5} (phi) @0> (size=4,offset=23040640): u32[]
+ value: <300 while.3{6} (phi) @0> (size=16,offset=23040192): u32[4]{0}
+ value: <301 while.3{7} (phi) @0> (size=16,offset=23040256): u32[4]{0}
+
+Total bytes used: 30720824 (29.30MiB)
+
+Used values:
+<0 constant.66 @0>
+ positions:
+  constant.66
+ uses:
+  compare.3, operand 1
+ from instruction: %constant.66 = s32[] constant(5)
+<1 compare.3 @0>
+ positions:
+  compare.3
+ uses:
+ from instruction: %compare.3 = pred[] compare(%get-tuple-element.106, %constant.66), direction=LT, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/cond/lt" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+<61 broadcast_add_fusion.clone @0>
+ positions:
+  broadcast_add_fusion.clone
+  call
+  tuple.14 {2}
+ uses:
+  tuple.14, operand 2
+ from instruction: %broadcast_add_fusion.clone = u32[3,10000,64]{2,1,0} fusion(%p, %p.1, %p.2, %p.3, %p.4), kind=kLoop, calls=%fused_computation.clone, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}, backend_config={"outer_dimension_partitions":["3","6"]}
+<97 broadcast_add_fusion.1.clone @0>
+ positions:
+  broadcast_add_fusion.1.clone
+  call.1
+  tuple.14 {1}
+ uses:
+  tuple.14, operand 1
+ from instruction: %broadcast_add_fusion.1.clone = u32[3,10000,64]{2,1,0} fusion(%p.5, %p.6, %p.7, %p.8), kind=kLoop, calls=%fused_computation.1.clone, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}, backend_config={"outer_dimension_partitions":["3","6"]}
+<98 copy.9 @0>
+ positions:
+  copy.9
+  p.4
+ uses:
+  call, operand 4
+  add.63, operand 0
+  broadcast_add_fusion.clone, operand 4
+ from instruction: %copy.9 = s32[] copy(%get-tuple-element.133)
+<99 constant.67 @0>
+ positions:
+  constant.67
+ uses:
+  add.63, operand 1
+ from instruction: %constant.67 = s32[] constant(1)
+<100 add.63 @0>
+ positions:
+  add.63
+  tuple.14 {0}
+ uses:
+  tuple.14, operand 0
+ from instruction: %add.63 = s32[] add(%copy.9, %constant.67), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+<101 copy.12 @0>
+ positions:
+  copy.12
+  p.5
+ uses:
+  call.1, operand 0
+  copy.22, operand 0
+  broadcast_add_fusion.1.clone, operand 0
+ from instruction: %copy.12 = u32[] copy(%get-tuple-element.136)
+<102 copy.15 @0>
+ positions:
+  copy.15
+  p.1
+  p.6
+ uses:
+  call, operand 1
+  copy.24, operand 0
+  call.1, operand 1
+  broadcast_add_fusion.clone, operand 1
+  broadcast_add_fusion.1.clone, operand 1
+ from instruction: %copy.15 = u32[4]{0} copy(%get-tuple-element.139)
+<103 copy.11 @0>
+ positions:
+  copy.11
+  p.2
+  p.7
+ uses:
+  call.1, operand 2
+  call, operand 2
+  broadcast_add_fusion.clone, operand 2
+  broadcast_add_fusion.1.clone, operand 2
+ from instruction: %copy.11 = u32[3,10000,64]{2,1,0} copy(%get-tuple-element.135)
+<104 copy.10 @0>
+ positions:
+  copy.10
+  p.3
+  p.8
+ uses:
+  call, operand 3
+  call.1, operand 3
+  broadcast_add_fusion.clone, operand 3
+  broadcast_add_fusion.1.clone, operand 3
+ from instruction: %copy.10 = u32[3,10000,64]{2,1,0} copy(%get-tuple-element.134)
+<105 copy.13 @0>
+ positions:
+  copy.13
+  p
+ uses:
+  call, operand 0
+  copy.20, operand 0
+  broadcast_add_fusion.clone, operand 0
+ from instruction: %copy.13 = u32[] copy(%get-tuple-element.137)
+<106 copy.20 @0>
+ positions:
+  copy.20
+  tuple.14 {3}
+ uses:
+  tuple.14, operand 3
+ from instruction: %copy.20 = u32[] copy(%copy.13), control-predecessors={%copy.12}
+<107 copy.14 @0>
+ positions:
+  copy.14
+ uses:
+  copy.21, operand 0
+ from instruction: %copy.14 = u32[] copy(%get-tuple-element.138)
+<108 copy.21 @0>
+ positions:
+  copy.21
+  tuple.14 {4}
+ uses:
+  tuple.14, operand 4
+ from instruction: %copy.21 = u32[] copy(%copy.14), control-predecessors={%copy.13}
+<109 copy.22 @0>
+ positions:
+  copy.22
+  tuple.14 {5}
+ uses:
+  tuple.14, operand 5
+ from instruction: %copy.22 = u32[] copy(%copy.12), control-predecessors={%copy.14}
+<110 copy.16 @0>
+ positions:
+  copy.16
+ uses:
+  copy.23, operand 0
+ from instruction: %copy.16 = u32[4]{0} copy(%get-tuple-element.140)
+<111 copy.23 @0>
+ positions:
+  copy.23
+  tuple.14 {6}
+ uses:
+  tuple.14, operand 6
+ from instruction: %copy.23 = u32[4]{0} copy(%copy.16), control-predecessors={%copy.15}
+<112 copy.24 @0>
+ positions:
+  copy.24
+  tuple.14 {7}
+ uses:
+  tuple.14, operand 7
+ from instruction: %copy.24 = u32[4]{0} copy(%copy.15), control-predecessors={%copy.16}
+<113 tuple.14{} @0>
+ positions:
+  tuple.14 {}
+ uses:
+ from instruction: %tuple.14 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) tuple(%add.63, %call.1, %call, %copy.20, %copy.21, /*index=5*/%copy.22, %copy.23, %copy.24)
+<222 broadcast_multiply_fusion.clone @0>
+ positions:
+  broadcast_multiply_fusion.clone
+  call.2
+ uses:
+ from instruction: %broadcast_multiply_fusion.clone = f32[3,10000,64]{2,1,0} fusion(%p.9, %p.10), kind=kLoop, calls=%fused_computation.2.clone, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/mul" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}, backend_config={"outer_dimension_partitions":["3","6"]}
+<241 broadcast_add_fusion.2.clone @0>
+ positions:
+  broadcast_add_fusion.2.clone
+  call.3
+  tuple.12 {2}
+ uses:
+  while.3, operand 0 {2}
+ from instruction: %broadcast_add_fusion.2.clone = u32[3,10000,64]{2,1,0} fusion(%p.11), kind=kLoop, calls=%fused_computation.4.clone, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}, backend_config={"outer_dimension_partitions":["3","6"]}
+<263 broadcast_add_fusion.3.clone @0>
+ positions:
+  broadcast_add_fusion.3.clone
+  call.4
+  tuple.12 {1}
+ uses:
+  while.3, operand 0 {1}
+ from instruction: %broadcast_add_fusion.3.clone = u32[3,10000,64]{2,1,0} fusion(%p.12), kind=kLoop, calls=%fused_computation.6.clone, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}, backend_config={"outer_dimension_partitions":["3","6"]}
+<264 constant.15 @0>
+ positions:
+  constant.15
+ uses:
+  copy.25, operand 0
+ from instruction: %constant.15 = s32[] constant(0)
+<265 copy.25 @0>
+ positions:
+  copy.25
+  tuple.12 {0}
+ uses:
+  while.3, operand 0 {0}
+ from instruction: %copy.25 = s32[] copy(%constant.15)
+<266 Arg_0.1 @0>
+ positions:
+  Arg_0.1
+  p.11
+  p.12
+ uses:
+  slice_bitcast_fusion, operand 0
+  slice_bitcast_fusion.1, operand 0
+  xor_xor_fusion, operand 0
+  call.3, operand 0
+  call.4, operand 0
+  broadcast_add_fusion.2.clone, operand 0
+  broadcast_add_fusion.3.clone, operand 0
+ from instruction: %Arg_0.1 = u32[2]{0} parameter(0), metadata={op_name="key"}
+<267 slice_bitcast_fusion @0>
+ positions:
+  slice_bitcast_fusion
+  tuple.12 {3}
+ uses:
+  while.3, operand 0 {3}
+ from instruction: %slice_bitcast_fusion = u32[] fusion(%Arg_0.1), kind=kLoop, calls=%fused_computation.5, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+<268 xor_xor_fusion @0>
+ positions:
+  xor_xor_fusion
+  tuple.12 {4}
+ uses:
+  while.3, operand 0 {4}
+ from instruction: %xor_xor_fusion = u32[] fusion(%Arg_0.1), kind=kLoop, calls=%fused_computation.3, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/xor" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+<269 slice_bitcast_fusion.1 @0>
+ positions:
+  slice_bitcast_fusion.1
+  tuple.12 {5}
+ uses:
+  while.3, operand 0 {5}
+ from instruction: %slice_bitcast_fusion.1 = u32[] fusion(%Arg_0.1), kind=kLoop, calls=%fused_computation.7, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+<270 constant.20 @0>
+ positions:
+  constant.20
+ uses:
+  copy.26, operand 0
+ from instruction: %constant.20 = u32[4]{0} constant({13, 15, 26, 6})
+<271 copy.26 @0>
+ positions:
+  copy.26
+  tuple.12 {6}
+ uses:
+  while.3, operand 0 {6}
+ from instruction: %copy.26 = u32[4]{0} copy(%constant.20)
+<272 constant.21 @0>
+ positions:
+  constant.21
+ uses:
+  copy.27, operand 0
+ from instruction: %constant.21 = u32[4]{0} constant({17, 29, 16, 24})
+<273 copy.27 @0>
+ positions:
+  copy.27
+  tuple.12 {7}
+ uses:
+  while.3, operand 0 {7}
+ from instruction: %copy.27 = u32[4]{0} copy(%constant.21)
+<274 tuple.12{} @0>
+ positions:
+  tuple.12 {}
+ uses:
+  while.3, operand 0 {}
+ from instruction: %tuple.12 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) tuple(%copy.25, %call.4, %call.3, %slice_bitcast_fusion, %xor_xor_fusion, /*index=5*/%slice_bitcast_fusion.1, %copy.26, %copy.27)
+<275 arg_tuple.3{} (phi) @0>
+ positions:
+  arg_tuple.3 {}
+ uses:
+  get-tuple-element.106, operand 0 {}
+ from instruction: %arg_tuple.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<276 arg_tuple.4{} (phi) @0>
+ positions:
+  arg_tuple.4 {}
+ uses:
+  get-tuple-element.140, operand 0 {}
+  get-tuple-element.139, operand 0 {}
+  get-tuple-element.138, operand 0 {}
+  get-tuple-element.137, operand 0 {}
+  get-tuple-element.136, operand 0 {}
+  get-tuple-element.135, operand 0 {}
+  get-tuple-element.134, operand 0 {}
+  get-tuple-element.133, operand 0 {}
+ from instruction: %arg_tuple.4 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<277 arg_tuple.3{0} (phi) @0>
+ positions:
+  arg_tuple.3 {0}
+  get-tuple-element.106
+ uses:
+  compare.3, operand 0
+ from instruction: %arg_tuple.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<278 arg_tuple.3{1} (phi) @0>
+ positions:
+  arg_tuple.3 {1}
+ uses:
+ from instruction: %arg_tuple.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<279 arg_tuple.3{2} (phi) @0>
+ positions:
+  arg_tuple.3 {2}
+ uses:
+ from instruction: %arg_tuple.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<280 arg_tuple.3{3} (phi) @0>
+ positions:
+  arg_tuple.3 {3}
+ uses:
+ from instruction: %arg_tuple.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<281 arg_tuple.3{4} (phi) @0>
+ positions:
+  arg_tuple.3 {4}
+ uses:
+ from instruction: %arg_tuple.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<282 arg_tuple.3{5} (phi) @0>
+ positions:
+  arg_tuple.3 {5}
+ uses:
+ from instruction: %arg_tuple.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<283 arg_tuple.3{6} (phi) @0>
+ positions:
+  arg_tuple.3 {6}
+ uses:
+ from instruction: %arg_tuple.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<284 arg_tuple.3{7} (phi) @0>
+ positions:
+  arg_tuple.3 {7}
+ uses:
+ from instruction: %arg_tuple.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<285 arg_tuple.4{0} (phi) @0>
+ positions:
+  arg_tuple.4 {0}
+  get-tuple-element.133
+ uses:
+  copy.9, operand 0
+ from instruction: %arg_tuple.4 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<286 arg_tuple.4{1} (phi) @0>
+ positions:
+  arg_tuple.4 {1}
+  get-tuple-element.134
+ uses:
+  copy.10, operand 0
+ from instruction: %arg_tuple.4 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<287 arg_tuple.4{2} (phi) @0>
+ positions:
+  arg_tuple.4 {2}
+  get-tuple-element.135
+ uses:
+  copy.11, operand 0
+ from instruction: %arg_tuple.4 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<288 arg_tuple.4{3} (phi) @0>
+ positions:
+  arg_tuple.4 {3}
+  get-tuple-element.136
+ uses:
+  copy.12, operand 0
+ from instruction: %arg_tuple.4 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<289 arg_tuple.4{4} (phi) @0>
+ positions:
+  arg_tuple.4 {4}
+  get-tuple-element.137
+ uses:
+  copy.13, operand 0
+ from instruction: %arg_tuple.4 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<290 arg_tuple.4{5} (phi) @0>
+ positions:
+  arg_tuple.4 {5}
+  get-tuple-element.138
+ uses:
+  copy.14, operand 0
+ from instruction: %arg_tuple.4 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<291 arg_tuple.4{6} (phi) @0>
+ positions:
+  arg_tuple.4 {6}
+  get-tuple-element.139
+ uses:
+  copy.15, operand 0
+ from instruction: %arg_tuple.4 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<292 arg_tuple.4{7} (phi) @0>
+ positions:
+  arg_tuple.4 {7}
+  get-tuple-element.140
+ uses:
+  copy.16, operand 0
+ from instruction: %arg_tuple.4 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+<293 while.3{} (phi) @0>
+ positions:
+  while.3 {}
+ uses:
+  get-tuple-element.3, operand 0 {}
+  get-tuple-element.2, operand 0 {}
+ from instruction: %while.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) while(%tuple.12), condition=%region_1.87.clone.clone, body=%region_0.64.clone.clone.clone, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}, backend_config={"known_trip_count":{"n":"5"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+<294 while.3{0} (phi) @0>
+ positions:
+  while.3 {0}
+ uses:
+ from instruction: %while.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) while(%tuple.12), condition=%region_1.87.clone.clone, body=%region_0.64.clone.clone.clone, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}, backend_config={"known_trip_count":{"n":"5"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+<295 while.3{1} (phi) @0>
+ positions:
+  while.3 {1}
+  get-tuple-element.2
+  p.9
+ uses:
+  call.2, operand 0
+  broadcast_multiply_fusion.clone, operand 0
+ from instruction: %while.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) while(%tuple.12), condition=%region_1.87.clone.clone, body=%region_0.64.clone.clone.clone, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}, backend_config={"known_trip_count":{"n":"5"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+<296 while.3{2} (phi) @0>
+ positions:
+  while.3 {2}
+  get-tuple-element.3
+  p.10
+ uses:
+  call.2, operand 1
+  broadcast_multiply_fusion.clone, operand 1
+ from instruction: %while.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) while(%tuple.12), condition=%region_1.87.clone.clone, body=%region_0.64.clone.clone.clone, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}, backend_config={"known_trip_count":{"n":"5"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+<297 while.3{3} (phi) @0>
+ positions:
+  while.3 {3}
+ uses:
+ from instruction: %while.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) while(%tuple.12), condition=%region_1.87.clone.clone, body=%region_0.64.clone.clone.clone, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}, backend_config={"known_trip_count":{"n":"5"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+<298 while.3{4} (phi) @0>
+ positions:
+  while.3 {4}
+ uses:
+ from instruction: %while.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) while(%tuple.12), condition=%region_1.87.clone.clone, body=%region_0.64.clone.clone.clone, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}, backend_config={"known_trip_count":{"n":"5"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+<299 while.3{5} (phi) @0>
+ positions:
+  while.3 {5}
+ uses:
+ from instruction: %while.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) while(%tuple.12), condition=%region_1.87.clone.clone, body=%region_0.64.clone.clone.clone, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}, backend_config={"known_trip_count":{"n":"5"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+<300 while.3{6} (phi) @0>
+ positions:
+  while.3 {6}
+ uses:
+ from instruction: %while.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) while(%tuple.12), condition=%region_1.87.clone.clone, body=%region_0.64.clone.clone.clone, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}, backend_config={"known_trip_count":{"n":"5"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+<301 while.3{7} (phi) @0>
+ positions:
+  while.3 {7}
+ uses:
+ from instruction: %while.3 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) while(%tuple.12), condition=%region_1.87.clone.clone, body=%region_0.64.clone.clone.clone, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}, backend_config={"known_trip_count":{"n":"5"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+
+
+HloLiveRange (max 66):
+  InstructionSequence:
+    0:Arg_0.1
+    1:constant.15
+    2:constant.20
+    3:constant.21
+    4:slice_bitcast_fusion
+    5:slice_bitcast_fusion.1
+    6:xor_xor_fusion
+    7:p.11
+    8:broadcast_add_fusion.2.clone
+    9:call.3
+    10:p.12
+    11:broadcast_add_fusion.3.clone
+    12:call.4
+    13:copy.25
+    14:copy.26
+    15:copy.27
+    16:tuple.12
+    17:arg_tuple.3
+    18:constant.66
+    19:get-tuple-element.106
+    20:compare.3
+    21:arg_tuple.4
+    22:constant.67
+    23:get-tuple-element.140
+    24:get-tuple-element.139
+    25:get-tuple-element.138
+    26:get-tuple-element.137
+    27:get-tuple-element.136
+    28:get-tuple-element.135
+    29:get-tuple-element.134
+    30:get-tuple-element.133
+    31:copy.16
+    32:copy.15
+    33:copy.14
+    34:copy.13
+    35:copy.12
+    36:copy.11
+    37:copy.10
+    38:copy.9
+    39:copy.24
+    40:copy.23
+    41:copy.21
+    42:copy.22
+    43:copy.20
+    44:p.5
+    45:p.6
+    46:p.7
+    47:p.8
+    48:broadcast_add_fusion.1.clone
+    49:call.1
+    50:p
+    51:p.1
+    52:p.2
+    53:p.3
+    54:p.4
+    55:broadcast_add_fusion.clone
+    56:call
+    57:add.63
+    58:tuple.14
+    59:while.3
+    60:get-tuple-element.3
+    61:get-tuple-element.2
+    62:p.9
+    63:p.10
+    64:broadcast_multiply_fusion.clone
+    65:call.2
+  BufferLiveRange:
+    constant.66{}:18-20
+    compare.3{}:20-21
+    broadcast_add_fusion.clone{}:55-59
+    broadcast_add_fusion.1.clone{}:48-59
+    copy.9{}:38-57
+    constant.67{}:22-57
+    add.63{}:57-59
+    copy.12{}:35-48
+    copy.15{}:32-55
+    copy.11{}:36-55
+    copy.10{}:37-55
+    copy.13{}:34-55
+    copy.20{}:43-59
+    copy.14{}:33-41
+    copy.21{}:41-59
+    copy.22{}:42-59
+    copy.16{}:31-40
+    copy.23{}:40-59
+    copy.24{}:39-59
+    tuple.14{}:58-59
+    broadcast_multiply_fusion.clone{}:64-66
+    broadcast_add_fusion.2.clone{}:8-17
+    broadcast_add_fusion.3.clone{}:11-17
+    constant.15{}:1-13
+    copy.25{}:13-17
+    Arg_0.1{}:0-66
+    slice_bitcast_fusion{}:4-17
+    xor_xor_fusion{}:6-17
+    slice_bitcast_fusion.1{}:5-17
+    constant.20{}:2-14
+    copy.26{}:14-17
+    constant.21{}:3-15
+    copy.27{}:15-17
+    tuple.12{}:16-17
+    arg_tuple.3{}:17-21
+    arg_tuple.4{}:21-30
+    arg_tuple.3{0}:17-21
+    arg_tuple.3{1}:17-21
+    arg_tuple.3{2}:17-21
+    arg_tuple.3{3}:17-21
+    arg_tuple.3{4}:17-21
+    arg_tuple.3{5}:17-21
+    arg_tuple.3{6}:17-21
+    arg_tuple.3{7}:17-21
+    arg_tuple.4{0}:21-38
+    arg_tuple.4{1}:21-37
+    arg_tuple.4{2}:21-36
+    arg_tuple.4{3}:21-35
+    arg_tuple.4{4}:21-34
+    arg_tuple.4{5}:21-33
+    arg_tuple.4{6}:21-32
+    arg_tuple.4{7}:21-31
+    while.3{}:59-61
+    while.3{0}:59-59
+    while.3{1}:59-64
+    while.3{2}:59-64
+    while.3{3}:59-59
+    while.3{4}:59-59
+    while.3{5}:59-59
+    while.3{6}:59-59
+    while.3{7}:59-59
+  Live ranges at 55 (peak):
+    broadcast_add_fusion.clone: 7680000 bytes
+    broadcast_add_fusion.1.clone: 7680000 bytes
+    copy.9: 4 bytes
+    constant.67: 4 bytes
+    copy.15: 16 bytes
+    copy.11: 7680000 bytes
+    copy.10: 7680000 bytes
+    copy.13: 4 bytes
+    copy.20: 4 bytes
+    copy.21: 4 bytes
+    copy.22: 4 bytes
+    copy.23: 16 bytes
+    copy.24: 16 bytes
+    Arg_0.1: 8 bytes

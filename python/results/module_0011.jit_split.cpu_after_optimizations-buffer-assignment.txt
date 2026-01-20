@@ -1,0 +1,85 @@
+BufferAssignment:
+allocation 0: size 7680000, parameter 0, shape |f32[3,10000,64]| at ShapeIndex {}:
+ value: <3 Arg_0.1 @0> (size=7680000,offset=0): f32[3,10000,64]{2,1,0}
+allocation 1: size 2880000, maybe-live-out:
+ value: <0 slice.2.clone @0> (size=2880000,offset=0): f32[3,10000,24]{2,1,0}
+allocation 2: size 2400000, maybe-live-out:
+ value: <2 slice.4.clone @0> (size=2400000,offset=0): f32[3,10000,20]{2,1,0}
+allocation 3: size 2400000, maybe-live-out:
+ value: <1 slice.3.clone @0> (size=2400000,offset=0): f32[3,10000,20]{2,1,0}
+allocation 4: size 24, output shape is |(f32[3,10000,24], f32[3,10000,20], f32[3,10000,20])|, maybe-live-out:
+ value: <4 tuple.5{} @0> (size=24,offset=0): (f32[3,10000,24]{2,1,0}, f32[3,10000,20]{2,1,0}, f32[3,10000,20]{2,1,0})
+
+Total bytes used: 15360024 (14.65MiB)
+
+Used values:
+<0 slice.2.clone @0>
+ positions:
+  slice.2.clone
+  tuple.5 {0}
+  call
+ uses:
+  tuple.5, operand 0
+ from instruction: %slice.2.clone = f32[3,10000,24]{2,1,0} slice(%p), slice={[0:3], [0:10000], [0:24]}, metadata={op_name="jit(split)/jit(main)/split" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=17}, backend_config={"outer_dimension_partitions":["2","2"]}
+<1 slice.3.clone @0>
+ positions:
+  slice.3.clone
+  tuple.5 {1}
+  call.1
+ uses:
+  tuple.5, operand 1
+ from instruction: %slice.3.clone = f32[3,10000,20]{2,1,0} slice(%p.1), slice={[0:3], [0:10000], [24:44]}, metadata={op_name="jit(split)/jit(main)/split" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=17}, backend_config={"outer_dimension_partitions":["2","2"]}
+<2 slice.4.clone @0>
+ positions:
+  slice.4.clone
+  tuple.5 {2}
+  call.2
+ uses:
+  tuple.5, operand 2
+ from instruction: %slice.4.clone = f32[3,10000,20]{2,1,0} slice(%p.2), slice={[0:3], [0:10000], [44:64]}, metadata={op_name="jit(split)/jit(main)/split" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=17}, backend_config={"outer_dimension_partitions":["2","2"]}
+<3 Arg_0.1 @0>
+ positions:
+  Arg_0.1
+  p
+  p.1
+  p.2
+ uses:
+  call, operand 0
+  call.1, operand 0
+  call.2, operand 0
+  slice.2.clone, operand 0
+  slice.3.clone, operand 0
+  slice.4.clone, operand 0
+ from instruction: %Arg_0.1 = f32[3,10000,64]{2,1,0} parameter(0), metadata={op_name="args[0]"}
+<4 tuple.5{} @0>
+ positions:
+  tuple.5 {}
+ uses:
+ from instruction: %tuple.5 = (f32[3,10000,24]{2,1,0}, f32[3,10000,20]{2,1,0}, f32[3,10000,20]{2,1,0}) tuple(%call, %call.1, %call.2)
+
+
+HloLiveRange (max 11):
+  InstructionSequence:
+    0:Arg_0.1
+    1:p
+    2:slice.2.clone
+    3:call
+    4:p.1
+    5:slice.3.clone
+    6:call.1
+    7:p.2
+    8:slice.4.clone
+    9:call.2
+    10:tuple.5
+  BufferLiveRange:
+    slice.2.clone{}:2-11
+    slice.3.clone{}:5-11
+    slice.4.clone{}:8-11
+    Arg_0.1{}:0-11
+    tuple.5{}:10-11
+  Live ranges at 10 (peak):
+    slice.2.clone: 2880000 bytes
+    slice.3.clone: 2400000 bytes
+    slice.4.clone: 2400000 bytes
+    Arg_0.1: 7680000 bytes
+    tuple.5: 24 bytes

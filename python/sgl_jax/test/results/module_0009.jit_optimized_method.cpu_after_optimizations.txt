@@ -1,0 +1,42 @@
+HloModule jit_optimized_method, is_scheduled=true, entry_computation_layout={(f32[3,10000,64]{2,1,0}, f32[3,10000,64]{2,1,0})->(f32[10000,64]{1,0}, f32[10000,64]{1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true,true}
+
+%fused_computation.clone (param_0.4: f32[3,10000,64]) -> f32[10000,64] {
+  %param_0.4 = f32[3,10000,64]{2,1,0} parameter(0)
+  %slice.13 = f32[1,10000,16]{2,1,0} slice(%param_0.4), slice={[0:1], [0:10000], [0:16]}, metadata={op_name="jit(optimized_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=31}
+  %bitcast.14 = f32[10000,16]{1,0} bitcast(%slice.13), metadata={op_name="jit(optimized_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=31}
+  %slice.11 = f32[1,10000,24]{2,1,0} slice(%param_0.4), slice={[1:2], [0:10000], [16:40]}, metadata={op_name="jit(optimized_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=31}
+  %bitcast.13 = f32[10000,24]{1,0} bitcast(%slice.11), metadata={op_name="jit(optimized_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=31}
+  %slice.9 = f32[1,10000,24]{2,1,0} slice(%param_0.4), slice={[2:3], [0:10000], [40:64]}, metadata={op_name="jit(optimized_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=31}
+  %bitcast.12 = f32[10000,24]{1,0} bitcast(%slice.9), metadata={op_name="jit(optimized_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=31}
+  ROOT %concatenate.2 = f32[10000,64]{1,0} concatenate(%bitcast.14, %bitcast.13, %bitcast.12), dimensions={1}, metadata={op_name="jit(optimized_method)/jit(main)/concatenate" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=31}
+}
+
+%parallel_bitcast_concatenate_fusion (p: f32[3,10000,64]) -> f32[10000,64] {
+  %p = f32[3,10000,64]{2,1,0} parameter(0)
+  ROOT %bitcast_concatenate_fusion.clone = f32[10000,64]{1,0} fusion(%p), kind=kLoop, calls=%fused_computation.clone, metadata={op_name="jit(optimized_method)/jit(main)/concatenate" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=31}, backend_config={"outer_dimension_partitions":["5"]}
+}
+
+%fused_computation.1.clone (param_0.5: f32[3,10000,64]) -> f32[10000,64] {
+  %param_0.5 = f32[3,10000,64]{2,1,0} parameter(0)
+  %slice.17 = f32[1,10000,16]{2,1,0} slice(%param_0.5), slice={[0:1], [0:10000], [0:16]}, metadata={op_name="jit(optimized_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=30}
+  %bitcast.17 = f32[10000,16]{1,0} bitcast(%slice.17), metadata={op_name="jit(optimized_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=30}
+  %slice.16 = f32[1,10000,24]{2,1,0} slice(%param_0.5), slice={[1:2], [0:10000], [16:40]}, metadata={op_name="jit(optimized_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=30}
+  %bitcast.16 = f32[10000,24]{1,0} bitcast(%slice.16), metadata={op_name="jit(optimized_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=30}
+  %slice.15 = f32[1,10000,24]{2,1,0} slice(%param_0.5), slice={[2:3], [0:10000], [40:64]}, metadata={op_name="jit(optimized_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=30}
+  %bitcast.15 = f32[10000,24]{1,0} bitcast(%slice.15), metadata={op_name="jit(optimized_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=30}
+  ROOT %concatenate.3 = f32[10000,64]{1,0} concatenate(%bitcast.17, %bitcast.16, %bitcast.15), dimensions={1}, metadata={op_name="jit(optimized_method)/jit(main)/concatenate" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=30}
+}
+
+%parallel_bitcast_concatenate_fusion.1 (p.1: f32[3,10000,64]) -> f32[10000,64] {
+  %p.1 = f32[3,10000,64]{2,1,0} parameter(0)
+  ROOT %bitcast_concatenate_fusion.1.clone = f32[10000,64]{1,0} fusion(%p.1), kind=kLoop, calls=%fused_computation.1.clone, metadata={op_name="jit(optimized_method)/jit(main)/concatenate" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=30}, backend_config={"outer_dimension_partitions":["5"]}
+}
+
+ENTRY %main.18 (Arg_0.1: f32[3,10000,64], Arg_1.2: f32[3,10000,64]) -> (f32[10000,64], f32[10000,64]) {
+  %Arg_0.1 = f32[3,10000,64]{2,1,0} parameter(0), metadata={op_name="cos_all"}
+  %Arg_1.2 = f32[3,10000,64]{2,1,0} parameter(1), metadata={op_name="sin_all"}
+  %call.1 = f32[10000,64]{1,0} call(%Arg_0.1), to_apply=%parallel_bitcast_concatenate_fusion.1
+  %call = f32[10000,64]{1,0} call(%Arg_1.2), to_apply=%parallel_bitcast_concatenate_fusion
+  ROOT %tuple.17 = (f32[10000,64]{1,0}, f32[10000,64]{1,0}) tuple(%call.1, %call)
+}
+

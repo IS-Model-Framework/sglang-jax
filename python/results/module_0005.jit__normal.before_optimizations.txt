@@ -1,0 +1,282 @@
+HloModule jit__normal, entry_computation_layout={(u32[2]{0})->f32[3,10000,64]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}
+
+%None.3 (Arg_0.4: s32[], Arg_1.5: u32[3,10000,64], Arg_2.6: u32[3,10000,64], Arg_3.7: u32[], Arg_4.8: u32[], Arg_5.9: u32[], Arg_6.10: u32[4], Arg_7.11: u32[4]) -> (s32[], u32[3,10000,64], u32[3,10000,64], u32[], u32[], /*index=5*/u32[], u32[4], u32[4]) {
+  %Arg_0.4 = s32[] parameter(0), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/closed_call"}
+  %constant.13 = s32[] constant(1)
+  %add.14 = s32[] add(%Arg_0.4, %constant.13), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %Arg_1.5 = u32[3,10000,64]{2,1,0} parameter(1), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/closed_call"}
+  %Arg_2.6 = u32[3,10000,64]{2,1,0} parameter(2), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/closed_call"}
+  %add.17 = u32[3,10000,64]{2,1,0} add(%Arg_1.5, %Arg_2.6), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %Arg_6.10 = u32[4]{0} parameter(6), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/closed_call"}
+  %slice.15 = u32[1]{0} slice(%Arg_6.10), slice={[0:1]}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %reshape.16 = u32[] reshape(%slice.15), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/squeeze" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.18 = u32[3,10000,64]{2,1,0} broadcast(%reshape.16), dimensions={}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/shift_left" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %shift-left.19 = u32[3,10000,64]{2,1,0} shift-left(%Arg_2.6, %broadcast.18), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/shift_left" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.12 = u32[] constant(32)
+  %subtract.20 = u32[] subtract(%constant.12, %reshape.16), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/sub" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.21 = u32[3,10000,64]{2,1,0} broadcast(%subtract.20), dimensions={}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/shift_right_logical" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %shift-right-logical.22 = u32[3,10000,64]{2,1,0} shift-right-logical(%Arg_2.6, %broadcast.21), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/shift_right_logical" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %or.23 = u32[3,10000,64]{2,1,0} or(%shift-left.19, %shift-right-logical.22), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/or" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %xor.24 = u32[3,10000,64]{2,1,0} xor(%add.17, %or.23), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/xor" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.27 = u32[3,10000,64]{2,1,0} add(%add.17, %xor.24), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %slice.25 = u32[1]{0} slice(%Arg_6.10), slice={[1:2]}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %reshape.26 = u32[] reshape(%slice.25), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/squeeze" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.28 = u32[3,10000,64]{2,1,0} broadcast(%reshape.26), dimensions={}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/shift_left" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %shift-left.29 = u32[3,10000,64]{2,1,0} shift-left(%xor.24, %broadcast.28), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/shift_left" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %subtract.30 = u32[] subtract(%constant.12, %reshape.26), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/sub" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.31 = u32[3,10000,64]{2,1,0} broadcast(%subtract.30), dimensions={}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/shift_right_logical" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %shift-right-logical.32 = u32[3,10000,64]{2,1,0} shift-right-logical(%xor.24, %broadcast.31), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/shift_right_logical" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %or.33 = u32[3,10000,64]{2,1,0} or(%shift-left.29, %shift-right-logical.32), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/or" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %xor.34 = u32[3,10000,64]{2,1,0} xor(%add.27, %or.33), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/xor" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.37 = u32[3,10000,64]{2,1,0} add(%add.27, %xor.34), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %slice.35 = u32[1]{0} slice(%Arg_6.10), slice={[2:3]}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %reshape.36 = u32[] reshape(%slice.35), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/squeeze" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.38 = u32[3,10000,64]{2,1,0} broadcast(%reshape.36), dimensions={}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/shift_left" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %shift-left.39 = u32[3,10000,64]{2,1,0} shift-left(%xor.34, %broadcast.38), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/shift_left" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %subtract.40 = u32[] subtract(%constant.12, %reshape.36), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/sub" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.41 = u32[3,10000,64]{2,1,0} broadcast(%subtract.40), dimensions={}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/shift_right_logical" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %shift-right-logical.42 = u32[3,10000,64]{2,1,0} shift-right-logical(%xor.34, %broadcast.41), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/shift_right_logical" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %or.43 = u32[3,10000,64]{2,1,0} or(%shift-left.39, %shift-right-logical.42), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/or" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %xor.44 = u32[3,10000,64]{2,1,0} xor(%add.37, %or.43), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/xor" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.47 = u32[3,10000,64]{2,1,0} add(%add.37, %xor.44), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %Arg_3.7 = u32[] parameter(3), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/closed_call"}
+  %broadcast.55 = u32[3,10000,64]{2,1,0} broadcast(%Arg_3.7), dimensions={}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.56 = u32[3,10000,64]{2,1,0} add(%add.47, %broadcast.55), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %slice.45 = u32[1]{0} slice(%Arg_6.10), slice={[3:4]}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %reshape.46 = u32[] reshape(%slice.45), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/squeeze" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.48 = u32[3,10000,64]{2,1,0} broadcast(%reshape.46), dimensions={}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/shift_left" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %shift-left.49 = u32[3,10000,64]{2,1,0} shift-left(%xor.44, %broadcast.48), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/shift_left" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %subtract.50 = u32[] subtract(%constant.12, %reshape.46), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/sub" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.51 = u32[3,10000,64]{2,1,0} broadcast(%subtract.50), dimensions={}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/shift_right_logical" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %shift-right-logical.52 = u32[3,10000,64]{2,1,0} shift-right-logical(%xor.44, %broadcast.51), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/shift_right_logical" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %or.53 = u32[3,10000,64]{2,1,0} or(%shift-left.49, %shift-right-logical.52), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/or" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %xor.54 = u32[3,10000,64]{2,1,0} xor(%add.47, %or.53), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/xor" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %Arg_4.8 = u32[] parameter(4), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/closed_call"}
+  %broadcast.57 = u32[3,10000,64]{2,1,0} broadcast(%Arg_4.8), dimensions={}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.58 = u32[3,10000,64]{2,1,0} add(%xor.54, %broadcast.57), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.59 = s32[] add(%Arg_0.4, %constant.13), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %convert.60 = u32[] convert(%add.59), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/convert_element_type" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.61 = u32[3,10000,64]{2,1,0} broadcast(%convert.60), dimensions={}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.62 = u32[3,10000,64]{2,1,0} add(%add.58, %broadcast.61), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %Arg_5.9 = u32[] parameter(5), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/closed_call"}
+  %Arg_7.11 = u32[4]{0} parameter(7), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/closed_call"}
+  ROOT %tuple.63 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) tuple(%add.14, %add.56, %add.62, %Arg_4.8, %Arg_5.9, /*index=5*/%Arg_3.7, %Arg_7.11, %Arg_6.10)
+}
+
+%region_0.64 (arg_tuple.65: (s32[], s32[], u32[3,10000,64], u32[3,10000,64], u32[], /*index=5*/u32[], u32[], u32[4], u32[4])) -> (s32[], s32[], u32[3,10000,64], u32[3,10000,64], u32[], /*index=5*/u32[], u32[], u32[4], u32[4]) {
+  %arg_tuple.65 = (s32[], s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], /*index=5*/u32[], u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+  %get-tuple-element.66 = s32[] get-tuple-element(%arg_tuple.65), index=0
+  %constant.75 = s32[] constant(1)
+  %add.85 = s32[] add(%get-tuple-element.66, %constant.75), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/body/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %get-tuple-element.67 = s32[] get-tuple-element(%arg_tuple.65), index=1
+  %get-tuple-element.68 = u32[3,10000,64]{2,1,0} get-tuple-element(%arg_tuple.65), index=2
+  %get-tuple-element.69 = u32[3,10000,64]{2,1,0} get-tuple-element(%arg_tuple.65), index=3
+  %get-tuple-element.70 = u32[] get-tuple-element(%arg_tuple.65), index=4
+  %get-tuple-element.71 = u32[] get-tuple-element(%arg_tuple.65), index=5
+  %get-tuple-element.72 = u32[] get-tuple-element(%arg_tuple.65), index=6
+  %get-tuple-element.73 = u32[4]{0} get-tuple-element(%arg_tuple.65), index=7
+  %get-tuple-element.74 = u32[4]{0} get-tuple-element(%arg_tuple.65), index=8
+  %call.76 = (s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], u32[], /*index=5*/u32[], u32[4]{0}, u32[4]{0}) call(%get-tuple-element.67, %get-tuple-element.68, %get-tuple-element.69, %get-tuple-element.70, %get-tuple-element.71, /*index=5*/%get-tuple-element.72, %get-tuple-element.73, %get-tuple-element.74), to_apply=%None.3
+  %get-tuple-element.77 = s32[] get-tuple-element(%call.76), index=0
+  %get-tuple-element.78 = u32[3,10000,64]{2,1,0} get-tuple-element(%call.76), index=1
+  %get-tuple-element.79 = u32[3,10000,64]{2,1,0} get-tuple-element(%call.76), index=2
+  %get-tuple-element.80 = u32[] get-tuple-element(%call.76), index=3
+  %get-tuple-element.81 = u32[] get-tuple-element(%call.76), index=4
+  %get-tuple-element.82 = u32[] get-tuple-element(%call.76), index=5
+  %get-tuple-element.83 = u32[4]{0} get-tuple-element(%call.76), index=6
+  %get-tuple-element.84 = u32[4]{0} get-tuple-element(%call.76), index=7
+  ROOT %tuple.86 = (s32[], s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], /*index=5*/u32[], u32[], u32[4]{0}, u32[4]{0}) tuple(%add.85, %get-tuple-element.77, %get-tuple-element.78, %get-tuple-element.79, %get-tuple-element.80, /*index=5*/%get-tuple-element.81, %get-tuple-element.82, %get-tuple-element.83, %get-tuple-element.84)
+}
+
+%region_1.87 (arg_tuple.88: (s32[], s32[], u32[3,10000,64], u32[3,10000,64], u32[], /*index=5*/u32[], u32[], u32[4], u32[4])) -> pred[] {
+  %arg_tuple.88 = (s32[], s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], /*index=5*/u32[], u32[], u32[4]{0}, u32[4]{0}) parameter(0)
+  %get-tuple-element.90 = s32[] get-tuple-element(%arg_tuple.88), index=1
+  %get-tuple-element.91 = u32[3,10000,64]{2,1,0} get-tuple-element(%arg_tuple.88), index=2
+  %get-tuple-element.92 = u32[3,10000,64]{2,1,0} get-tuple-element(%arg_tuple.88), index=3
+  %get-tuple-element.93 = u32[] get-tuple-element(%arg_tuple.88), index=4
+  %get-tuple-element.94 = u32[] get-tuple-element(%arg_tuple.88), index=5
+  %get-tuple-element.95 = u32[] get-tuple-element(%arg_tuple.88), index=6
+  %get-tuple-element.96 = u32[4]{0} get-tuple-element(%arg_tuple.88), index=7
+  %get-tuple-element.97 = u32[4]{0} get-tuple-element(%arg_tuple.88), index=8
+  %get-tuple-element.89 = s32[] get-tuple-element(%arg_tuple.88), index=0
+  %constant.98 = s32[] constant(5)
+  ROOT %compare.99 = pred[] compare(%get-tuple-element.89, %constant.98), direction=LT, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while/cond/lt" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+}
+
+%_uniform.100 (Arg_0.101: u32[2], Arg_1.102: f32[], Arg_2.103: f32[]) -> f32[3,10000,64] {
+  %constant.116 = s32[] constant(0)
+  %iota.126 = u64[3]{0} iota(), iota_dimension=0, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/iota_2x32_shape" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.127 = u64[3,10000,64]{2,1,0} broadcast(%iota.126), dimensions={0}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/iota_2x32_shape" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.114 = u64[] constant(640000)
+  %broadcast.115 = u64[3,10000,64]{2,1,0} broadcast(%constant.114), dimensions={}
+  %multiply.132 = u64[3,10000,64]{2,1,0} multiply(%broadcast.127, %broadcast.115), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/iota_2x32_shape" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %iota.128 = u64[10000]{0} iota(), iota_dimension=0, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/iota_2x32_shape" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.129 = u64[3,10000,64]{2,1,0} broadcast(%iota.128), dimensions={1}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/iota_2x32_shape" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.112 = u64[] constant(64)
+  %broadcast.113 = u64[3,10000,64]{2,1,0} broadcast(%constant.112), dimensions={}
+  %multiply.133 = u64[3,10000,64]{2,1,0} multiply(%broadcast.129, %broadcast.113), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/iota_2x32_shape" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.134 = u64[3,10000,64]{2,1,0} add(%multiply.132, %multiply.133), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/iota_2x32_shape" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %iota.130 = u64[64]{0} iota(), iota_dimension=0, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/iota_2x32_shape" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.131 = u64[3,10000,64]{2,1,0} broadcast(%iota.130), dimensions={2}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/iota_2x32_shape" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.135 = u64[3,10000,64]{2,1,0} add(%add.134, %broadcast.131), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/iota_2x32_shape" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.110 = u64[] constant(32)
+  %broadcast.111 = u64[3,10000,64]{2,1,0} broadcast(%constant.110), dimensions={}
+  %shift-right-logical.136 = u64[3,10000,64]{2,1,0} shift-right-logical(%add.135, %broadcast.111), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/iota_2x32_shape" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %convert.138 = u32[3,10000,64]{2,1,0} convert(%shift-right-logical.136), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/iota_2x32_shape" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %Arg_0.101 = u32[2]{0} parameter(0), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/pjit"}
+  %slice.122 = u32[1]{0} slice(%Arg_0.101), slice={[0:1]}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %reshape.123 = u32[] reshape(%slice.122), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/squeeze" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.141 = u32[3,10000,64]{2,1,0} broadcast(%reshape.123), dimensions={}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.142 = u32[3,10000,64]{2,1,0} add(%convert.138, %broadcast.141), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %convert.137 = u32[3,10000,64]{2,1,0} convert(%add.135), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/iota_2x32_shape" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %slice.124 = u32[1]{0} slice(%Arg_0.101), slice={[1:2]}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %reshape.125 = u32[] reshape(%slice.124), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/squeeze" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.143 = u32[3,10000,64]{2,1,0} broadcast(%reshape.125), dimensions={}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.144 = u32[3,10000,64]{2,1,0} add(%convert.137, %broadcast.143), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %xor.139 = u32[] xor(%reshape.123, %reshape.125), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/xor" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.117 = u32[] constant(466688986)
+  %xor.140 = u32[] xor(%xor.139, %constant.117), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/xor" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.119 = u32[4]{0} constant({13, 15, 26, 6})
+  %constant.118 = u32[4]{0} constant({17, 29, 16, 24})
+  %tuple.145 = (s32[], s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], /*index=5*/u32[], u32[], u32[4]{0}, u32[4]{0}) tuple(%constant.116, %constant.116, %add.142, %add.144, %reshape.125, /*index=5*/%xor.140, %reshape.123, %constant.119, %constant.118), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %while.146 = (s32[], s32[], u32[3,10000,64]{2,1,0}, u32[3,10000,64]{2,1,0}, u32[], /*index=5*/u32[], u32[], u32[4]{0}, u32[4]{0}) while(%tuple.145), condition=%region_1.87, body=%region_0.64, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %get-tuple-element.147 = s32[] get-tuple-element(%while.146), index=0, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %get-tuple-element.148 = s32[] get-tuple-element(%while.146), index=1, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %get-tuple-element.151 = u32[] get-tuple-element(%while.146), index=4, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %get-tuple-element.152 = u32[] get-tuple-element(%while.146), index=5, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %get-tuple-element.153 = u32[] get-tuple-element(%while.146), index=6, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %get-tuple-element.154 = u32[4]{0} get-tuple-element(%while.146), index=7, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %get-tuple-element.155 = u32[4]{0} get-tuple-element(%while.146), index=8, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %Arg_1.102 = f32[] parameter(1), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/pjit"}
+  %reshape.120 = f32[1,1,1]{2,1,0} reshape(%Arg_1.102), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/broadcast_in_dim" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.170 = f32[1,1,1]{2,1,0} broadcast(%reshape.120), dimensions={0,1,2}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/max" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %reshape.171 = f32[] reshape(%broadcast.170), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/max" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.172 = f32[3,10000,64]{2,1,0} broadcast(%reshape.171), dimensions={}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/max" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %get-tuple-element.149 = u32[3,10000,64]{2,1,0} get-tuple-element(%while.146), index=2, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %get-tuple-element.150 = u32[3,10000,64]{2,1,0} get-tuple-element(%while.146), index=3, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/while" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %xor.156 = u32[3,10000,64]{2,1,0} xor(%get-tuple-element.149, %get-tuple-element.150), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/xor" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.108 = u32[] constant(9)
+  %broadcast.109 = u32[3,10000,64]{2,1,0} broadcast(%constant.108), dimensions={}
+  %shift-right-logical.157 = u32[3,10000,64]{2,1,0} shift-right-logical(%xor.156, %broadcast.109), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/shift_right_logical" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.106 = u32[] constant(1065353216)
+  %broadcast.107 = u32[3,10000,64]{2,1,0} broadcast(%constant.106), dimensions={}
+  %or.158 = u32[3,10000,64]{2,1,0} or(%shift-right-logical.157, %broadcast.107), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/or" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %bitcast-convert.159 = f32[3,10000,64]{2,1,0} bitcast-convert(%or.158), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/bitcast_convert_type" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.104 = f32[] constant(1)
+  %broadcast.105 = f32[3,10000,64]{2,1,0} broadcast(%constant.104), dimensions={}
+  %subtract.160 = f32[3,10000,64]{2,1,0} subtract(%bitcast-convert.159, %broadcast.105), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/sub" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %Arg_2.103 = f32[] parameter(2), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/pjit"}
+  %reshape.121 = f32[1,1,1]{2,1,0} reshape(%Arg_2.103), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/broadcast_in_dim" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %subtract.161 = f32[1,1,1]{2,1,0} subtract(%reshape.121, %reshape.120), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/sub" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.162 = f32[1,1,1]{2,1,0} broadcast(%subtract.161), dimensions={0,1,2}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/mul" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %reshape.163 = f32[] reshape(%broadcast.162), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/mul" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.164 = f32[3,10000,64]{2,1,0} broadcast(%reshape.163), dimensions={}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/mul" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %multiply.165 = f32[3,10000,64]{2,1,0} multiply(%subtract.160, %broadcast.164), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/mul" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.166 = f32[1,1,1]{2,1,0} broadcast(%reshape.120), dimensions={0,1,2}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %reshape.167 = f32[] reshape(%broadcast.166), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %broadcast.168 = f32[3,10000,64]{2,1,0} broadcast(%reshape.167), dimensions={}, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.169 = f32[3,10000,64]{2,1,0} add(%multiply.165, %broadcast.168), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/add" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  ROOT %maximum.173 = f32[3,10000,64]{2,1,0} maximum(%broadcast.172, %add.169), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/jit(_uniform)/max" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+}
+
+%_normal_real.174 (Arg_0.175: u32[2]) -> f32[3,10000,64] {
+  %Arg_0.175 = u32[2]{0} parameter(0), metadata={op_name="jit(_normal)/jit(main)/pjit"}
+  %constant.224 = f32[] constant(-0.99999994)
+  %constant.225 = f32[] constant(1)
+  %call.226 = f32[3,10000,64]{2,1,0} call(%Arg_0.175, %constant.224, %constant.225), to_apply=%_uniform.100
+  %abs.262 = f32[3,10000,64]{2,1,0} abs(%call.226), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.180 = f32[] constant(1)
+  %broadcast.181 = f32[3,10000,64]{2,1,0} broadcast(%constant.180), dimensions={}
+  %compare.263 = pred[3,10000,64]{2,1,0} compare(%abs.262, %broadcast.181), direction=EQ, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.178 = f32[] constant(inf)
+  %broadcast.179 = f32[3,10000,64]{2,1,0} broadcast(%constant.178), dimensions={}
+  %multiply.264 = f32[3,10000,64]{2,1,0} multiply(%call.226, %broadcast.179), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %negate.227 = f32[3,10000,64]{2,1,0} negate(%call.226), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %multiply.228 = f32[3,10000,64]{2,1,0} multiply(%call.226, %negate.227), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %log-plus-one.229 = f32[3,10000,64]{2,1,0} log-plus-one(%multiply.228), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %negate.230 = f32[3,10000,64]{2,1,0} negate(%log-plus-one.229), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.222 = f32[] constant(5)
+  %broadcast.223 = f32[3,10000,64]{2,1,0} broadcast(%constant.222), dimensions={}
+  %compare.231 = pred[3,10000,64]{2,1,0} compare(%negate.230, %broadcast.223), direction=LT, metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.184 = f32[] constant(1.50140941)
+  %broadcast.185 = f32[3,10000,64]{2,1,0} broadcast(%constant.184), dimensions={}
+  %constant.182 = f32[] constant(2.83297682)
+  %broadcast.183 = f32[3,10000,64]{2,1,0} broadcast(%constant.182), dimensions={}
+  %select.258 = f32[3,10000,64]{2,1,0} select(%compare.231, %broadcast.185, %broadcast.183), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.188 = f32[] constant(0.246640727)
+  %broadcast.189 = f32[3,10000,64]{2,1,0} broadcast(%constant.188), dimensions={}
+  %constant.186 = f32[] constant(1.00167406)
+  %broadcast.187 = f32[3,10000,64]{2,1,0} broadcast(%constant.186), dimensions={}
+  %select.255 = f32[3,10000,64]{2,1,0} select(%compare.231, %broadcast.189, %broadcast.187), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.192 = f32[] constant(-0.00417768164)
+  %broadcast.193 = f32[3,10000,64]{2,1,0} broadcast(%constant.192), dimensions={}
+  %constant.190 = f32[] constant(0.00943887047)
+  %broadcast.191 = f32[3,10000,64]{2,1,0} broadcast(%constant.190), dimensions={}
+  %select.252 = f32[3,10000,64]{2,1,0} select(%compare.231, %broadcast.193, %broadcast.191), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.196 = f32[] constant(-0.00125372503)
+  %broadcast.197 = f32[3,10000,64]{2,1,0} broadcast(%constant.196), dimensions={}
+  %constant.194 = f32[] constant(-0.0076224613)
+  %broadcast.195 = f32[3,10000,64]{2,1,0} broadcast(%constant.194), dimensions={}
+  %select.249 = f32[3,10000,64]{2,1,0} select(%compare.231, %broadcast.197, %broadcast.195), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.200 = f32[] constant(0.00021858087)
+  %broadcast.201 = f32[3,10000,64]{2,1,0} broadcast(%constant.200), dimensions={}
+  %constant.198 = f32[] constant(0.00573950773)
+  %broadcast.199 = f32[3,10000,64]{2,1,0} broadcast(%constant.198), dimensions={}
+  %select.246 = f32[3,10000,64]{2,1,0} select(%compare.231, %broadcast.201, %broadcast.199), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.204 = f32[] constant(-4.39150654e-06)
+  %broadcast.205 = f32[3,10000,64]{2,1,0} broadcast(%constant.204), dimensions={}
+  %constant.202 = f32[] constant(-0.00367342844)
+  %broadcast.203 = f32[3,10000,64]{2,1,0} broadcast(%constant.202), dimensions={}
+  %select.243 = f32[3,10000,64]{2,1,0} select(%compare.231, %broadcast.205, %broadcast.203), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.208 = f32[] constant(-3.5233877e-06)
+  %broadcast.209 = f32[3,10000,64]{2,1,0} broadcast(%constant.208), dimensions={}
+  %constant.206 = f32[] constant(0.00134934322)
+  %broadcast.207 = f32[3,10000,64]{2,1,0} broadcast(%constant.206), dimensions={}
+  %select.240 = f32[3,10000,64]{2,1,0} select(%compare.231, %broadcast.209, %broadcast.207), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.212 = f32[] constant(3.43273939e-07)
+  %broadcast.213 = f32[3,10000,64]{2,1,0} broadcast(%constant.212), dimensions={}
+  %constant.210 = f32[] constant(0.000100950558)
+  %broadcast.211 = f32[3,10000,64]{2,1,0} broadcast(%constant.210), dimensions={}
+  %select.237 = f32[3,10000,64]{2,1,0} select(%compare.231, %broadcast.213, %broadcast.211), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.216 = f32[] constant(2.81022636e-08)
+  %broadcast.217 = f32[3,10000,64]{2,1,0} broadcast(%constant.216), dimensions={}
+  %constant.214 = f32[] constant(-0.000200214257)
+  %broadcast.215 = f32[3,10000,64]{2,1,0} broadcast(%constant.214), dimensions={}
+  %select.236 = f32[3,10000,64]{2,1,0} select(%compare.231, %broadcast.217, %broadcast.215), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.220 = f32[] constant(2.5)
+  %broadcast.221 = f32[3,10000,64]{2,1,0} broadcast(%constant.220), dimensions={}
+  %subtract.232 = f32[3,10000,64]{2,1,0} subtract(%negate.230, %broadcast.221), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %sqrt.233 = f32[3,10000,64]{2,1,0} sqrt(%negate.230), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.218 = f32[] constant(3)
+  %broadcast.219 = f32[3,10000,64]{2,1,0} broadcast(%constant.218), dimensions={}
+  %subtract.234 = f32[3,10000,64]{2,1,0} subtract(%sqrt.233, %broadcast.219), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %select.235 = f32[3,10000,64]{2,1,0} select(%compare.231, %subtract.232, %subtract.234), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %multiply.238 = f32[3,10000,64]{2,1,0} multiply(%select.236, %select.235), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.239 = f32[3,10000,64]{2,1,0} add(%select.237, %multiply.238), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %multiply.241 = f32[3,10000,64]{2,1,0} multiply(%add.239, %select.235), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.242 = f32[3,10000,64]{2,1,0} add(%select.240, %multiply.241), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %multiply.244 = f32[3,10000,64]{2,1,0} multiply(%add.242, %select.235), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.245 = f32[3,10000,64]{2,1,0} add(%select.243, %multiply.244), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %multiply.247 = f32[3,10000,64]{2,1,0} multiply(%add.245, %select.235), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.248 = f32[3,10000,64]{2,1,0} add(%select.246, %multiply.247), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %multiply.250 = f32[3,10000,64]{2,1,0} multiply(%add.248, %select.235), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.251 = f32[3,10000,64]{2,1,0} add(%select.249, %multiply.250), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %multiply.253 = f32[3,10000,64]{2,1,0} multiply(%add.251, %select.235), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.254 = f32[3,10000,64]{2,1,0} add(%select.252, %multiply.253), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %multiply.256 = f32[3,10000,64]{2,1,0} multiply(%add.254, %select.235), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.257 = f32[3,10000,64]{2,1,0} add(%select.255, %multiply.256), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %multiply.259 = f32[3,10000,64]{2,1,0} multiply(%add.257, %select.235), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %add.260 = f32[3,10000,64]{2,1,0} add(%select.258, %multiply.259), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %multiply.261 = f32[3,10000,64]{2,1,0} multiply(%add.260, %call.226), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %select.265 = f32[3,10000,64]{2,1,0} select(%compare.263, %multiply.264, %multiply.261), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/erf_inv" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+  %constant.176 = f32[] constant(1.41421354)
+  %broadcast.177 = f32[3,10000,64]{2,1,0} broadcast(%constant.176), dimensions={}
+  ROOT %multiply.266 = f32[3,10000,64]{2,1,0} multiply(%select.265, %broadcast.177), metadata={op_name="jit(_normal)/jit(main)/jit(_normal_real)/mul" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=12}
+}
+
+ENTRY %main.268 (Arg_0.1: u32[2]) -> f32[3,10000,64] {
+  %Arg_0.1 = u32[2]{0} parameter(0), metadata={op_name="key"}
+  %custom-call.2 = u32[2]{0} custom-call(%Arg_0.1), custom_call_target="Sharding", sharding={replicated}
+  ROOT %call.267 = f32[3,10000,64]{2,1,0} call(%custom-call.2), to_apply=%_normal_real.174
+}
+

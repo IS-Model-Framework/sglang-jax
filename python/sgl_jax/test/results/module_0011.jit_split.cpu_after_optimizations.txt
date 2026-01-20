@@ -1,0 +1,25 @@
+HloModule jit_split, is_scheduled=true, entry_computation_layout={(f32[3,10000,64]{2,1,0})->(f32[3,10000,16]{2,1,0}, f32[3,10000,24]{2,1,0}, f32[3,10000,24]{2,1,0})}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true,true,true}
+
+%parallel_slice.2 (p: f32[3,10000,64]) -> f32[3,10000,16] {
+  %p = f32[3,10000,64]{2,1,0} parameter(0)
+  ROOT %slice.2.clone = f32[3,10000,16]{2,1,0} slice(%p), slice={[0:3], [0:10000], [0:16]}, metadata={op_name="jit(split)/jit(main)/split" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=17}, backend_config={"outer_dimension_partitions":["2","2"]}
+}
+
+%parallel_slice.3 (p.1: f32[3,10000,64]) -> f32[3,10000,24] {
+  %p.1 = f32[3,10000,64]{2,1,0} parameter(0)
+  ROOT %slice.3.clone = f32[3,10000,24]{2,1,0} slice(%p.1), slice={[0:3], [0:10000], [16:40]}, metadata={op_name="jit(split)/jit(main)/split" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=17}, backend_config={"outer_dimension_partitions":["2","2"]}
+}
+
+%parallel_slice.4 (p.2: f32[3,10000,64]) -> f32[3,10000,24] {
+  %p.2 = f32[3,10000,64]{2,1,0} parameter(0)
+  ROOT %slice.4.clone = f32[3,10000,24]{2,1,0} slice(%p.2), slice={[0:3], [0:10000], [40:64]}, metadata={op_name="jit(split)/jit(main)/split" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=17}, backend_config={"outer_dimension_partitions":["2","2"]}
+}
+
+ENTRY %main.6 (Arg_0.1: f32[3,10000,64]) -> (f32[3,10000,16], f32[3,10000,24], f32[3,10000,24]) {
+  %Arg_0.1 = f32[3,10000,64]{2,1,0} parameter(0), metadata={op_name="args[0]"}
+  %call = f32[3,10000,16]{2,1,0} call(%Arg_0.1), to_apply=%parallel_slice.2
+  %call.1 = f32[3,10000,24]{2,1,0} call(%Arg_0.1), to_apply=%parallel_slice.3
+  %call.2 = f32[3,10000,24]{2,1,0} call(%Arg_0.1), to_apply=%parallel_slice.4
+  ROOT %tuple.5 = (f32[3,10000,16]{2,1,0}, f32[3,10000,24]{2,1,0}, f32[3,10000,24]{2,1,0}) tuple(%call, %call.1, %call.2)
+}
+

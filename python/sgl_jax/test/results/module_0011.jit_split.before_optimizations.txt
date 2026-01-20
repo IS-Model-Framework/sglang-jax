@@ -1,0 +1,10 @@
+HloModule jit_split, entry_computation_layout={(f32[3,10000,64]{2,1,0})->(f32[3,10000,16]{2,1,0}, f32[3,10000,24]{2,1,0}, f32[3,10000,24]{2,1,0})}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true,true,true}
+
+ENTRY %main.6 (Arg_0.1: f32[3,10000,64]) -> (f32[3,10000,16], f32[3,10000,24], f32[3,10000,24]) {
+  %Arg_0.1 = f32[3,10000,64]{2,1,0} parameter(0), metadata={op_name="args[0]"}
+  %slice.2 = f32[3,10000,16]{2,1,0} slice(%Arg_0.1), slice={[0:3], [0:10000], [0:16]}, metadata={op_name="jit(split)/jit(main)/split" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=17}
+  %slice.3 = f32[3,10000,24]{2,1,0} slice(%Arg_0.1), slice={[0:3], [0:10000], [16:40]}, metadata={op_name="jit(split)/jit(main)/split" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=17}
+  %slice.4 = f32[3,10000,24]{2,1,0} slice(%Arg_0.1), slice={[0:3], [0:10000], [40:64]}, metadata={op_name="jit(split)/jit(main)/split" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=17}
+  ROOT %tuple.5 = (f32[3,10000,16]{2,1,0}, f32[3,10000,24]{2,1,0}, f32[3,10000,24]{2,1,0}) tuple(%slice.2, %slice.3, %slice.4)
+}
+

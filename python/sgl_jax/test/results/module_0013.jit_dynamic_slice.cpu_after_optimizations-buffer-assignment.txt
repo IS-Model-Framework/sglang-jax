@@ -1,0 +1,86 @@
+BufferAssignment:
+allocation 0: size 1920000, parameter 0, shape |f32[3,10000,16]| at ShapeIndex {}:
+ value: <3 Arg_0.1 @0> (size=1920000,offset=0): f32[3,10000,16]{2,1,0}
+allocation 1: size 640000, output shape is |f32[1,10000,16]|, maybe-live-out:
+ value: <0 dynamic-slice.5.clone @0> (size=640000,offset=0): f32[1,10000,16]{2,1,0}
+allocation 2: size 4, parameter 2, shape |s32[]| at ShapeIndex {}:
+ value: <1 Arg_2.3 @0> (size=4,offset=0): s32[]
+allocation 3: size 4, parameter 3, shape |s32[]| at ShapeIndex {}:
+ value: <2 Arg_3.4 @0> (size=4,offset=0): s32[]
+allocation 4: size 4, parameter 1, shape |s32[]| at ShapeIndex {}:
+ value: <4 Arg_1.2 @0> (size=4,offset=0): s32[]
+allocation 5: size 4, constant:
+ value: <5 constant @0> (size=4,offset=0): s32[]
+
+Total bytes used: 2560016 (2.44MiB)
+
+Used values:
+<0 dynamic-slice.5.clone @0>
+ positions:
+  dynamic-slice.5.clone
+  call
+ uses:
+ from instruction: %dynamic-slice.5.clone = f32[1,10000,16]{2,1,0} dynamic-slice(%p, %p.1, %p.2, %p.2), dynamic_slice_sizes={1,10000,16}, metadata={op_name="jit(dynamic_slice)/jit(main)/dynamic_slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=20}, backend_config={"outer_dimension_partitions":["1","4"]}
+<1 Arg_2.3 @0>
+ positions:
+  Arg_2.3
+ uses:
+ from instruction: %Arg_2.3 = s32[] parameter(2), metadata={op_name="args[2]"}
+<2 Arg_3.4 @0>
+ positions:
+  Arg_3.4
+ uses:
+ from instruction: %Arg_3.4 = s32[] parameter(3), metadata={op_name="args[3]"}
+<3 Arg_0.1 @0>
+ positions:
+  Arg_0.1
+  p
+ uses:
+  call, operand 0
+  dynamic-slice.5.clone, operand 0
+ from instruction: %Arg_0.1 = f32[3,10000,16]{2,1,0} parameter(0), metadata={op_name="args[0]"}
+<4 Arg_1.2 @0>
+ positions:
+  Arg_1.2
+  p.1
+ uses:
+  call, operand 1
+  dynamic-slice.5.clone, operand 1
+ from instruction: %Arg_1.2 = s32[] parameter(1), metadata={op_name="args[1]"}
+<5 constant @0>
+ positions:
+  constant
+  p.2
+ uses:
+  call, operand 2
+  dynamic-slice.5.clone, operand 2
+  dynamic-slice.5.clone, operand 3
+ from instruction: %constant = s32[] constant(0), metadata={op_name="args[1]"}
+
+
+HloLiveRange (max 10):
+  InstructionSequence:
+    0:Arg_0.1
+    1:Arg_1.2
+    2:Arg_2.3
+    3:Arg_3.4
+    4:constant
+    5:p
+    6:p.1
+    7:p.2
+    8:dynamic-slice.5.clone
+    9:call
+  BufferLiveRange:
+    dynamic-slice.5.clone{}:8-10
+    Arg_2.3{}:0-10
+    Arg_3.4{}:0-10
+    Arg_0.1{}:0-10
+    Arg_1.2{}:0-10
+    constant{}:4-8
+  Live ranges at 8 (peak):
+    dynamic-slice.5.clone: 640000 bytes
+    Arg_2.3: 4 bytes
+    Arg_3.4: 4 bytes
+    Arg_0.1: 1920000 bytes
+    Arg_1.2: 4 bytes
+    constant: 4 bytes

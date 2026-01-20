@@ -1,0 +1,77 @@
+BufferAssignment:
+allocation 0: size 7680000, parameter 0, shape |f32[3,10000,64]| at ShapeIndex {}:
+ value: <12 Arg_0.1 @0> (size=7680000,offset=0): f32[3,10000,64]{2,1,0}
+allocation 1: size 7680000, parameter 1, shape |f32[3,10000,64]| at ShapeIndex {}:
+ value: <13 Arg_1.2 @0> (size=7680000,offset=0): f32[3,10000,64]{2,1,0}
+allocation 2: size 2560000, maybe-live-out:
+ value: <11 bitcast_concatenate_fusion.1.clone @0> (size=2560000,offset=0): f32[10000,64]{1,0}
+allocation 3: size 2560000, maybe-live-out:
+ value: <5 bitcast_concatenate_fusion.clone @0> (size=2560000,offset=0): f32[10000,64]{1,0}
+allocation 4: size 16, output shape is |(f32[10000,64], f32[10000,64])|, maybe-live-out:
+ value: <14 tuple.23{} @0> (size=16,offset=0): (f32[10000,64]{1,0}, f32[10000,64]{1,0})
+
+Total bytes used: 20480016 (19.53MiB)
+
+Used values:
+<5 bitcast_concatenate_fusion.clone @0>
+ positions:
+  bitcast_concatenate_fusion.clone
+  tuple.23 {1}
+  call
+ uses:
+  tuple.23, operand 1
+ from instruction: %bitcast_concatenate_fusion.clone = f32[10000,64]{1,0} fusion(%p), kind=kLoop, calls=%fused_computation.clone, metadata={op_name="jit(original_method)/jit(main)/concatenate" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=24}, backend_config={"outer_dimension_partitions":["5"]}
+<11 bitcast_concatenate_fusion.1.clone @0>
+ positions:
+  bitcast_concatenate_fusion.1.clone
+  tuple.23 {0}
+  call.1
+ uses:
+  tuple.23, operand 0
+ from instruction: %bitcast_concatenate_fusion.1.clone = f32[10000,64]{1,0} fusion(%p.1), kind=kLoop, calls=%fused_computation.1.clone, metadata={op_name="jit(original_method)/jit(main)/concatenate" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=23}, backend_config={"outer_dimension_partitions":["5"]}
+<12 Arg_0.1 @0>
+ positions:
+  Arg_0.1
+  p.1
+ uses:
+  call.1, operand 0
+  bitcast_concatenate_fusion.1.clone, operand 0
+ from instruction: %Arg_0.1 = f32[3,10000,64]{2,1,0} parameter(0), metadata={op_name="cos_all"}
+<13 Arg_1.2 @0>
+ positions:
+  Arg_1.2
+  p
+ uses:
+  call, operand 0
+  bitcast_concatenate_fusion.clone, operand 0
+ from instruction: %Arg_1.2 = f32[3,10000,64]{2,1,0} parameter(1), metadata={op_name="sin_all"}
+<14 tuple.23{} @0>
+ positions:
+  tuple.23 {}
+ uses:
+ from instruction: %tuple.23 = (f32[10000,64]{1,0}, f32[10000,64]{1,0}) tuple(%call.1, %call)
+
+
+HloLiveRange (max 9):
+  InstructionSequence:
+    0:Arg_0.1
+    1:Arg_1.2
+    2:p.1
+    3:bitcast_concatenate_fusion.1.clone
+    4:call.1
+    5:p
+    6:bitcast_concatenate_fusion.clone
+    7:call
+    8:tuple.23
+  BufferLiveRange:
+    bitcast_concatenate_fusion.clone{}:6-9
+    bitcast_concatenate_fusion.1.clone{}:3-9
+    Arg_0.1{}:0-9
+    Arg_1.2{}:0-9
+    tuple.23{}:8-9
+  Live ranges at 8 (peak):
+    bitcast_concatenate_fusion.clone: 2560000 bytes
+    bitcast_concatenate_fusion.1.clone: 2560000 bytes
+    Arg_0.1: 7680000 bytes
+    Arg_1.2: 7680000 bytes
+    tuple.23: 16 bytes

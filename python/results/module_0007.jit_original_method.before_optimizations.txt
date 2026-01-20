@@ -1,0 +1,28 @@
+HloModule jit_original_method, entry_computation_layout={(f32[3,10000,64]{2,1,0}, f32[3,10000,64]{2,1,0})->(f32[10000,64]{1,0}, f32[10000,64]{1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true,true}
+
+ENTRY %main.24 (Arg_0.1: f32[3,10000,64], Arg_1.2: f32[3,10000,64]) -> (f32[10000,64], f32[10000,64]) {
+  %Arg_0.1 = f32[3,10000,64]{2,1,0} parameter(0), metadata={op_name="cos_all"}
+  %slice.3 = f32[3,10000,24]{2,1,0} slice(%Arg_0.1), slice={[0:3], [0:10000], [0:24]}, metadata={op_name="jit(original_method)/jit(main)/split" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=17}
+  %slice.9 = f32[1,10000,24]{2,1,0} slice(%slice.3), slice={[0:1], [0:10000], [0:24]}, metadata={op_name="jit(original_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=20}
+  %reshape.10 = f32[10000,24]{1,0} reshape(%slice.9), metadata={op_name="jit(original_method)/jit(main)/squeeze" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=20}
+  %slice.4 = f32[3,10000,20]{2,1,0} slice(%Arg_0.1), slice={[0:3], [0:10000], [24:44]}, metadata={op_name="jit(original_method)/jit(main)/split" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=17}
+  %slice.11 = f32[1,10000,20]{2,1,0} slice(%slice.4), slice={[1:2], [0:10000], [0:20]}, metadata={op_name="jit(original_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=20}
+  %reshape.12 = f32[10000,20]{1,0} reshape(%slice.11), metadata={op_name="jit(original_method)/jit(main)/squeeze" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=20}
+  %slice.5 = f32[3,10000,20]{2,1,0} slice(%Arg_0.1), slice={[0:3], [0:10000], [44:64]}, metadata={op_name="jit(original_method)/jit(main)/split" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=17}
+  %slice.13 = f32[1,10000,20]{2,1,0} slice(%slice.5), slice={[2:3], [0:10000], [0:20]}, metadata={op_name="jit(original_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=20}
+  %reshape.14 = f32[10000,20]{1,0} reshape(%slice.13), metadata={op_name="jit(original_method)/jit(main)/squeeze" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=20}
+  %concatenate.21 = f32[10000,64]{1,0} concatenate(%reshape.10, %reshape.12, %reshape.14), dimensions={1}, metadata={op_name="jit(original_method)/jit(main)/concatenate" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=23}
+  %Arg_1.2 = f32[3,10000,64]{2,1,0} parameter(1), metadata={op_name="sin_all"}
+  %slice.6 = f32[3,10000,24]{2,1,0} slice(%Arg_1.2), slice={[0:3], [0:10000], [0:24]}, metadata={op_name="jit(original_method)/jit(main)/split" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=18}
+  %slice.15 = f32[1,10000,24]{2,1,0} slice(%slice.6), slice={[0:1], [0:10000], [0:24]}, metadata={op_name="jit(original_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=21}
+  %reshape.16 = f32[10000,24]{1,0} reshape(%slice.15), metadata={op_name="jit(original_method)/jit(main)/squeeze" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=21}
+  %slice.7 = f32[3,10000,20]{2,1,0} slice(%Arg_1.2), slice={[0:3], [0:10000], [24:44]}, metadata={op_name="jit(original_method)/jit(main)/split" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=18}
+  %slice.17 = f32[1,10000,20]{2,1,0} slice(%slice.7), slice={[1:2], [0:10000], [0:20]}, metadata={op_name="jit(original_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=21}
+  %reshape.18 = f32[10000,20]{1,0} reshape(%slice.17), metadata={op_name="jit(original_method)/jit(main)/squeeze" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=21}
+  %slice.8 = f32[3,10000,20]{2,1,0} slice(%Arg_1.2), slice={[0:3], [0:10000], [44:64]}, metadata={op_name="jit(original_method)/jit(main)/split" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=18}
+  %slice.19 = f32[1,10000,20]{2,1,0} slice(%slice.8), slice={[2:3], [0:10000], [0:20]}, metadata={op_name="jit(original_method)/jit(main)/slice" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=21}
+  %reshape.20 = f32[10000,20]{1,0} reshape(%slice.19), metadata={op_name="jit(original_method)/jit(main)/squeeze" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=21}
+  %concatenate.22 = f32[10000,64]{1,0} concatenate(%reshape.16, %reshape.18, %reshape.20), dimensions={1}, metadata={op_name="jit(original_method)/jit(main)/concatenate" source_file="/home/wqh/jax_projects/sglang-jax/python/sgl_jax/test/aa.py" source_line=24}
+  ROOT %tuple.23 = (f32[10000,64]{1,0}, f32[10000,64]{1,0}) tuple(%concatenate.21, %concatenate.22)
+}
+

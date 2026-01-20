@@ -410,7 +410,7 @@ class MRotaryEmbedding(RotaryEmbedding):
 
         # Fallback to standard RoPE for 1D positions
         return super().__call__(positions, query, key)
-
+    @jax.jit
     def _forward_mrope(
         self,
         positions: jax.Array,

@@ -3,8 +3,8 @@ import jax.numpy as jnp
 import numpy as np
 import unittest
 
-from sgl_jax.srt.layers.embeddings import MRotaryEmbedding
-
+# from sgl_jax.srt.layers.embeddings import MRotaryEmbedding
+from sgl_jax.test.MRoPE import MRotaryEmbedding
 
 class TestMRotaryEmbedding(unittest.TestCase):
 
