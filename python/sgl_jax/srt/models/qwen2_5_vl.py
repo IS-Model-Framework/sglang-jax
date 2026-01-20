@@ -191,6 +191,8 @@ class Qwen2_5_VisionAttention(nnx.Module):
     ):
         self.num_heads = num_heads
         self.num_kv_heads = self.num_heads
+        self.num_heads_original = num_heads
+        self.num_kv_heads_original = self.num_kv_heads
         self.rope_theta = rope_theta
         self.rope_scaling = rope_scaling
 
@@ -200,8 +202,8 @@ class Qwen2_5_VisionAttention(nnx.Module):
         self.num_kv_heads = get_padded_num_heads(self.num_kv_heads,
                                                  sharding_size)
 
-        # TODO: Consider padding in future
-        self.head_dim = head_dim or hidden_size // self.num_heads
+        self.head_dim = head_dim or hidden_size // self.num_heads_original
+        self.heads_pad = self.num_heads - self.num_heads_original
 
         self.mesh = mesh
 
@@ -249,9 +251,15 @@ class Qwen2_5_VisionAttention(nnx.Module):
         q, k, v = jnp.split(qkv, 3, axis=-1)
 
         # [T, B, N, H]
-        q = q.reshape(T, B, self.num_heads, self.head_dim)
-        k = k.reshape(T, B, self.num_heads, self.head_dim)
-        v = v.reshape(T, B, self.num_heads, self.head_dim)
+        q = q.reshape(T, B, self.num_heads_original, self.head_dim)
+        k = k.reshape(T, B, self.num_kv_heads_original, self.head_dim)
+        v = v.reshape(T, B, self.num_kv_heads_original, self.head_dim)
+
+        if self.heads_pad:
+            pad_width = ((0, 0), (0, 0), (0, self.heads_pad), (0, 0))
+            q = jnp.pad(q, pad_width, "constant")
+            k = jnp.pad(k, pad_width, "constant")
+            v = jnp.pad(v, pad_width, "constant")
 
         # [T, B, N, H] -> [B, T, N, H]
         q = jnp.transpose(q, (1, 0, 2, 3))
@@ -289,6 +297,9 @@ class Qwen2_5_VisionAttention(nnx.Module):
 
         # Unpad the output
         output = output[:, :, :T_attn, :]
+
+        if self.heads_pad:
+            output = output[:, :self.num_heads_original, :, :]
 
         # [B, N, T, H] -> [T, B, N, H]
         output = jnp.transpose(output, (2, 0, 1, 3))
