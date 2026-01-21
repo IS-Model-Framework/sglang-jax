@@ -195,8 +195,10 @@ class Qwen2_5_VisionAttention(nnx.Module):
         self.num_kv_heads_original = self.num_kv_heads
         self.rope_theta = rope_theta
         self.rope_scaling = rope_scaling
-
-        sharding_size = mesh.shape["tensor"]
+        if mesh is None:
+            sharding_size = 1
+        else:
+            sharding_size = mesh.shape["tensor"]
         self.num_heads = get_padded_num_heads(self.num_heads,
                                               sharding_size)
         self.num_kv_heads = get_padded_num_heads(self.num_kv_heads,
