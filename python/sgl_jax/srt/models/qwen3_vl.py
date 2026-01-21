@@ -9,7 +9,7 @@ from jax.sharding import Mesh
 from jax.sharding import PartitionSpec as P
 from jax.experimental import shard_map
 from flax import nnx
-
+import jax.image as jimage
 from sgl_jax.srt.managers.schedule_batch import (
     MultimodalDataItem,
     MultimodalInputs,
@@ -73,6 +73,7 @@ class Qwen3_VLVisionPatchEmbed(nnx.Module):
         hidden_size: int = 1152,
         dtype: jnp.dtype = jnp.bfloat16,
         rngs: nnx.Rngs = None,
+        mesh = None
     ):
         self.patch_size = patch_size
         self.temporal_patch_size = temporal_patch_size
@@ -88,7 +89,7 @@ class Qwen3_VLVisionPatchEmbed(nnx.Module):
             param_dtype=dtype,
             kernel_init=nnx.with_partitioning(
                 nnx.initializers.lecun_normal(),
-                (None, None, None, None, "tensor") 
+                (None, None, None, None, "tensor")
             ),
             bias_init=nnx.with_partitioning(
                 nnx.initializers.zeros_init(),
@@ -265,7 +266,6 @@ class TokenEmbedding(nnx.Module):
     def __call__(self, token_ids):
         return jnp.take(self.weight, token_ids, axis=0)
 
-
 def _resize_bilinear_nchw(x, out_h, out_w, align_corners: bool):
     # x: [N, C, H, W]
     in_h, in_w = x.shape[2], x.shape[3]
@@ -302,7 +302,6 @@ def _resize_bilinear_nchw(x, out_h, out_w, align_corners: bool):
     return out
 
 
-
 class Qwen3_VisionModel(nnx.Module):
     def __init__(self,
                  config: Qwen3VLConfig,
@@ -325,7 +324,7 @@ class Qwen3_VisionModel(nnx.Module):
         # DeepStack
         self.deepstack_visual_indexes = config.vision_config.deepstack_visual_indexes
         self.out_hidden_size = self.hidden_size * self.spatial_merge_unit
-
+        
         self.patch_embed = Qwen3_VLVisionPatchEmbed(
             patch_size=config.vision_config.patch_size,
             temporal_patch_size=config.vision_config.temporal_patch_size,
@@ -335,15 +334,15 @@ class Qwen3_VisionModel(nnx.Module):
             rngs=rngs)
         
         # TODO (qihang) Simple version:2026.1.20 pos_embed (be used to abs pos embed)-------------------------------
-        self.pos_embed = TokenEmbedding(
-            num_embeddings=self.num_position_embeddings,
-            embedding_dim=self.hidden_size,
-            rngs=rngs
-        )
+        self.pos_embed = nnx.Embed(
+                            num_embeddings=self.num_position_embeddings,
+                            features=self.hidden_size,
+                            rngs=rngs,
+                        )
         # NOTE(qihang) 实际上这只是freqs，不是完整的rope_emb
         self.rotary_pos_emb = Qwen3_VisionRotaryEmbedding(self.head_dim // 2)
 
-        self.blocks = [
+        self.blocks = nnx.data([
             Qwen3_VisionBlock(
                 config=config,
                 norm_eps=norm_eps,
@@ -351,7 +350,7 @@ class Qwen3_VisionModel(nnx.Module):
                 rngs=rngs,
                 mesh=mesh,
             ) for _ in range(config.vision_config.depth)
-        ]
+        ])
         self.merger = Qwen3_VisionPatchMerger(
             config = config.vision_config,
             use_postshuffle_norm=False,
@@ -360,7 +359,7 @@ class Qwen3_VisionModel(nnx.Module):
             mesh=mesh,
         )
         # TODO(qihang) 所有的prefix都还没有加上去
-        self.deepstack_merger_list = [
+        self.deepstack_merger_list = nnx.data([
                 Qwen3_VisionPatchMerger(
                     config = config.vision_config,
                     use_postshuffle_norm = True,
@@ -369,7 +368,7 @@ class Qwen3_VisionModel(nnx.Module):
                     mesh = mesh,
                 )
                 for layer_idx in range(len(self.deepstack_visual_indexes))
-            ]
+            ])
      
 
     def rotary_pos_emb_thw(self, t, h, w):
@@ -477,7 +476,6 @@ class Qwen3_VisionModel(nnx.Module):
         return (rotary_pos_emb_thw, window_index_thw, cu_seqlens_window_thw,
                 cu_seqlens_thw)
 
-
     def fast_pos_embed_interpolate(self, grid_thw):
         patch_pos_embeds_permute = []
         m_size = self.spatial_merge_size
@@ -490,8 +488,9 @@ class Qwen3_VisionModel(nnx.Module):
         )  # [1, dim, Gh, Gw]
 
         for t, h, w in grid_thw:
-            pos_embed = _resize_bilinear_nchw(
-                embeds, h, w, align_corners=self.align_corners
+            # TODO (qihang) JAX的插值使用自己的坐标映射规则，需要检查和Torch是否一致。
+            pos_embed = jimage.resize(
+                embeds, (1, embeds.shape[1], h, w), method="bilinear"#
             )
             pos_embed = pos_embed.reshape(
                 -1,
@@ -506,6 +505,92 @@ class Qwen3_VisionModel(nnx.Module):
             patch_pos_embeds_permute.append(pos_embed)
 
         return jnp.concatenate(patch_pos_embeds_permute, axis=0)
+
+    def rot_pos_ids(self, h: int, w: int, spatial_merge_size: int) -> jnp.ndarray:
+        """
+        生成旋转位置编码 ID (JAX 版本)
+        
+        Args:
+            h: 高度 (int)
+            w: 宽度 (int)
+            spatial_merge_size: 空间合并大小 (int)
+        """
+        # 1. 生成网格坐标
+        # jnp.indices((h, w)) 返回 shape (2, h, w)
+        # grid[0] 是行索引 (hpos), grid[1] 是列索引 (wpos)
+        grid = jnp.indices((h, w), dtype=jnp.int32)
+        hpos_ids, wpos_ids = grid[0], grid[1]
+
+        # 2. 计算 reshape 的维度
+        # 注意：在 JAX 的 JIT 编译中，reshape 的维度必须是静态已知的整数
+        h_div = h // spatial_merge_size
+        w_div = w // spatial_merge_size
+        
+        # 定义变换逻辑
+        def process_ids(ids):
+            # Reshape: [h_div, s, w_div, s]
+            ids = ids.reshape(h_div, spatial_merge_size, w_div, spatial_merge_size)
+            # Transpose: [h_div, w_div, s, s] (交换轴 1 和 2)
+            ids = ids.transpose(0, 2, 1, 3)
+            # Flatten
+            return ids.flatten()
+
+        # 3. 应用变换
+        hpos_ids = process_ids(hpos_ids)
+        wpos_ids = process_ids(wpos_ids)
+
+        # 4. 堆叠: [flattened_len, 2]
+        return jnp.stack([hpos_ids, wpos_ids], axis=-1)
+
+    def rot_pos_emb(self, grid_thw: list[list[int]]):
+        pos_ids = []
+        for t, h, w in grid_thw:
+            base = self.rot_pos_ids(h, w, self.spatial_merge_size)  # [hw', 1] or [hw', ?]
+            pos_ids.append(base if t == 1 else jnp.repeat(base, t, axis=0))
+
+        pos_ids = jnp.concatenate(pos_ids, axis=0)
+        max_grid_size = max(max(h, w) for _, h, w in grid_thw)
+
+        # 预先缓存的 cos/sin
+        cos, sin = self.rotary_pos_emb.get_cos_sin(max_grid_size)
+
+        # 等价于 cos[pos_ids] / sin[pos_ids]
+        cos_combined = jnp.take(cos, pos_ids, axis=0).reshape(pos_ids.shape[0], -1)
+        sin_combined = jnp.take(sin, pos_ids, axis=0).reshape(pos_ids.shape[0], -1)
+
+        return cos_combined, sin_combined
+
+
+    def compute_cu_seqlens_from_grid(self, grid_thw: jnp.ndarray) -> jnp.ndarray:
+        """
+        Compute cu_seqlens from grid_thw using JAX.
+        
+        Args:
+            grid_thw: [N, 3] array. columns: [repeat_count (t), H, W]
+        Returns:
+            cu_seqlens: 1D int32 array, shape [Sum(t) + 1]
+        """
+        # 1. 计算每一项的空间大小 (H * W)
+        spatial_sizes = grid_thw[:, 1] * grid_thw[:, 2]
+        
+        # 2. 获取重复次数 (t)
+        repeats = grid_thw[:, 0]
+
+        # 3. 重复空间大小
+        # 注意: jnp.repeat 的第二个参数如果是 JAX 数组，
+        # 会导致输出形状动态变化，这与 jax.jit 不兼容。
+        # 此函数应在 eager mode (CPU) 下运行。
+        # total_lengths 形状: [sum(repeats)]
+        all_lengths = jnp.repeat(spatial_sizes, repeats)
+
+        # 4. 累积求和
+        cu_seqlens = jnp.cumsum(all_lengths, dtype=jnp.int32)
+
+        # 5. 前面补 0 (相当于 np.concatenate([zeros, ...]))
+        # jnp.pad 对应 mode='constant' 默认填 0
+        cu_seqlens = jnp.pad(cu_seqlens, (1, 0), constant_values=0)
+
+        return cu_seqlens
 
     def __call__(self, x: jax.Array, grid_thw: tuple[tuple[int, int,
                                                            int]]) -> jax.Array:
@@ -529,7 +614,9 @@ class Qwen3_VisionModel(nnx.Module):
 
         seq_len = x.shape[0]
         hidden_states = hidden_states.reshape(seq_len, -1)
-        
+        rotary_pos_emb_cos, rotary_pos_emb_sin = self.rot_pos_emb(grid_thw.tolist())
+        cu_seqlens = self.compute_cu_seqlens_from_grid_numpy(grid_thw)
+        # TODO (qihang) 2026.1.21 cu_seqlens rebuild using jax
         # 4. deepstack
         # 5. blk forward
         # num of patches
@@ -597,3 +684,29 @@ class Qwen3_VisionModel(nnx.Module):
 #---LLMDecoder
 
 #---Model
+def test_qwen3_vision_model():
+    from jax.experimental import mesh_utils
+    import numpy as np
+
+    config = Qwen3VLConfig()
+    devices = jax.devices() 
+    mesh = Mesh(np.array(devices).reshape((1, 1)), ("data", "tensor"), axis_types=(jax.sharding.AxisType.Explicit, jax.sharding.AxisType.Explicit))
+    jax.set_mesh(mesh)
+    rngs = nnx.Rngs(0)
+    
+    model = Qwen3_VisionModel(
+        config=config,
+        dtype=jnp.bfloat16,
+        rngs=rngs
+    )
+
+    dummy_x = jnp.ones((14080, 1536), dtype=jnp.bfloat16)
+    
+    grid_thw = ((4, 80, 44),) 
+    
+    print("正在运行 Forward...")
+    output = model(dummy_x, grid_thw)
+    print(f"✅ Forward 运行成功! 输出形状: {output.shape}")
+
+if __name__ == "__main__":
+    test_qwen3_vision_model()
