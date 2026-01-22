@@ -29,7 +29,75 @@ from sgl_jax.utils import logger
 from sgl_jax.srt.kernels.flash_attention import flash_attention
 from sgl_jax.srt.models.qwen2_5_vl import Qwen2_5_VisionAttention
 
+
+
 #---VisionEncoder
+
+class SegmentIds(NamedTuple):
+    """SegmentIds for Q and KV sequences.
+
+  SegmentIds are used to generate segment mask, which prevents attention between
+  different segments in the input sequence. Each array is a list of ids
+  (integers).
+  Only the token with the same id can attend to each other.
+
+  Attributes:
+    q: segment ids along the Q sequence.
+    kv: segment ids along the KV sequence.
+  """
+
+    q: jax.Array  # [batch_size, q_seq_len]
+    kv: jax.Array  # [batch_size, kv_seq_len]
+    
+def generate_window_segment_ids(cu_seqlens: jax.Array, seq_len: int,
+                                padded_seq_len: int) -> SegmentIds:
+    """Generates segment IDs for windowed attention
+
+    Args:
+        cu_seqlens: A 1D array of cumulative sequence lengths for each window.
+            e.g., [0, len_win0, len_win0+len_win1, ...]
+
+    Returns:
+        A SegmentIds object for flash_attention.
+    """
+    indices = jnp.arange(seq_len, dtype=jnp.int32)
+    segment_ids = jnp.searchsorted(cu_seqlens[1:], indices, side='right') + 1
+    padding_segment_ids = jnp.zeros(padded_seq_len - seq_len, dtype=jnp.int32)
+    segment_ids = jnp.concatenate([segment_ids, padding_segment_ids])
+    segment_ids = segment_ids.reshape(1, -1)
+
+    return SegmentIds(q=segment_ids, kv=segment_ids)
+
+
+def apply_rotary_pos_emb_vision(x: jax.Array,
+                                rotary_pos_emb: jax.Array) -> jax.Array:
+    # x: [B, T, N, H]
+    # rotary_pos_emb: [T, H//2]
+    _, _, _, H = x.shape
+    half_dim = H // 2
+
+    # [B, T, N, H//2]
+    x_real = x[..., :half_dim]
+    x_imag = x[..., half_dim:]
+
+    # [T, H//2]
+    cos_emb = jnp.cos(rotary_pos_emb)
+    sin_emb = jnp.sin(rotary_pos_emb)
+
+    # [1, T, 1, H//2]
+    cos_emb = cos_emb[None, :, None, :]
+    sin_emb = sin_emb[None, :, None, :]
+
+    # [B, T, N, H//2]
+    x_rotated_real = x_real * cos_emb - x_imag * sin_emb
+    x_rotated_imag = x_real * sin_emb + x_imag * cos_emb
+
+    # [B, T, N, H]
+    x_rotated = jnp.concatenate([x_rotated_real, x_rotated_imag], axis=-1)
+
+    return x_rotated
+
+
 class Qwen3_VisionMLP(nnx.Module):
 
     def __init__(
@@ -155,6 +223,142 @@ def sharded_flash_attention(
                             out_specs=out_specs,
                             check_rep=False))
 
+class Qwen3_VisionAttention(nnx.Module):
+
+    def __init__(
+            self,
+            hidden_size: int,
+            num_heads: int,
+            rope_theta: float = 5000000,
+            rope_scaling: dict[str, Any] | None = None,
+            head_dim: int | None = None,
+            dtype: jnp.dtype = jnp.bfloat16,
+            mesh: Mesh = None,
+    ):
+        self.num_heads = num_heads
+        self.num_kv_heads = self.num_heads
+        self.num_heads_original = num_heads
+        self.num_kv_heads_original = self.num_kv_heads
+        self.rope_theta = rope_theta
+        self.rope_scaling = rope_scaling
+        if mesh is None:
+            sharding_size = 1
+        else:
+            sharding_size = mesh.shape["tensor"]
+        self.num_heads = get_padded_num_heads(self.num_heads,
+                                              sharding_size)
+        self.num_kv_heads = get_padded_num_heads(self.num_kv_heads,
+                                                 sharding_size)
+
+        self.head_dim = head_dim or hidden_size // self.num_heads_original
+        self.heads_pad = self.num_heads - self.num_heads_original
+
+        self.mesh = mesh
+
+        self.qkv_proj = LinearBase(
+            hidden_size,
+            3 * hidden_size,
+            kernel_axes=(None, "tensor"),
+            use_bias=True,
+            params_dtype=dtype,
+            mesh=mesh,
+        )
+
+        self.o_proj = LinearBase(
+            hidden_size,
+            hidden_size,
+            kernel_axes=("tensor", None),
+            use_bias=True,
+            params_dtype=dtype,
+            mesh=mesh,
+        )
+
+        self.flash_attention = sharded_flash_attention(
+            mesh=mesh,
+            causal=False,
+            sm_scale=1.0 / math.sqrt(self.head_dim),
+            vmem_limit_bytes=128 * 1024 * 1024,
+        )
+
+    def __call__(
+        self,
+        x: jax.Array,
+        rotary_pos_emb: jax.Array,
+        cu_window_seqlens: Optional[jax.Array] = None,
+        use_fullattn: bool = True,
+    ) -> jax.Array:
+        T, B, D = x.shape
+        assert B == 1, "Vision attention currently only supports batch size 1"
+        # [T, B, D] -> [T, B, 3 * D]
+        qkv, _ = self.qkv_proj(x)
+
+        # Split into Q, K, V.
+        # NOTE: simplified from vLLM's split_qkv,
+        # may need to revisit for tp>1
+        # [T, B, 3 * D] -> 3 *[T, B, D]
+        q, k, v = jnp.split(qkv, 3, axis=-1)
+
+        # [T, B, N, H]
+        q = q.reshape(T, B, self.num_heads_original, self.head_dim)
+        k = k.reshape(T, B, self.num_kv_heads_original, self.head_dim)
+        v = v.reshape(T, B, self.num_kv_heads_original, self.head_dim)
+
+        if self.heads_pad:
+            pad_width = ((0, 0), (0, 0), (0, self.heads_pad), (0, 0))
+            q = jnp.pad(q, pad_width, "constant")
+            k = jnp.pad(k, pad_width, "constant")
+            v = jnp.pad(v, pad_width, "constant")
+
+        # [T, B, N, H] -> [B, T, N, H]
+        q = jnp.transpose(q, (1, 0, 2, 3))
+        k = jnp.transpose(k, (1, 0, 2, 3))
+        v = jnp.transpose(v, (1, 0, 2, 3))
+
+        # rotary_pos_emb shape: (T, H)
+        q = apply_rotary_pos_emb_vision(q, rotary_pos_emb)
+        k = apply_rotary_pos_emb_vision(k, rotary_pos_emb)
+
+        # NOTE: an extra transpose because we need to
+        # align the correctness with vLLM's design.
+        # Might be able to remove one once implemented.
+        # [B, T, N, H] -> [B, N, T, H]
+        q = jnp.transpose(q, (0, 2, 1, 3))
+        k = jnp.transpose(k, (0, 2, 1, 3))
+        v = jnp.transpose(v, (0, 2, 1, 3))
+
+        # Pad the sequence length to be a multiple of 128 for flash_attention
+        block_k_major = 128
+        T_attn = q.shape[2]
+        padded_T = (T_attn + block_k_major -
+                    1) // block_k_major * block_k_major
+        pad_width = ((0, 0), (0, 0), (0, padded_T - T_attn), (0, 0))
+
+        q = jnp.pad(q, pad_width, 'constant')
+        k = jnp.pad(k, pad_width, 'constant')
+        v = jnp.pad(v, pad_width, 'constant')
+
+        segment_ids = generate_window_segment_ids(cu_window_seqlens, T_attn,
+                                                  padded_T)
+
+        # TODO (jacobplatin): add support for quantized KV cache?
+        output = self.flash_attention(q, k, v, segment_ids)
+
+        # Unpad the output
+        output = output[:, :, :T_attn, :]
+
+        if self.heads_pad:
+            output = output[:, :self.num_heads_original, :, :]
+
+        # [B, N, T, H] -> [T, B, N, H]
+        output = jnp.transpose(output, (2, 0, 1, 3))
+
+        output = output.reshape(T, B, D)
+
+        output = self.o_proj(output)
+
+        return output[0]
+
+
 class Qwen3_VisionBlock(nnx.Module):
 
     def __init__(
@@ -173,7 +377,7 @@ class Qwen3_VisionBlock(nnx.Module):
 
         self.norm1 = norm_layer(dim, dtype=dtype, rngs=rngs)
         self.norm2 = norm_layer(dim, dtype=dtype, rngs=rngs)
-        self.attn = Qwen2_5_VisionAttention(hidden_size=config.vision_config.hidden_size,
+        self.attn = Qwen3_VisionAttention(hidden_size=config.vision_config.hidden_size,
                                             num_heads=config.vision_config.num_heads,
                                             rope_theta=config.text_config.rope_theta,
                                             rope_scaling=config.text_config.rope_scaling,
@@ -490,7 +694,7 @@ class Qwen3_VisionModel(nnx.Module):
         for t, h, w in grid_thw:
             # TODO (qihang) JAX的插值使用自己的坐标映射规则，需要检查和Torch是否一致。
             pos_embed = jimage.resize(
-                embeds, (1, embeds.shape[1], h, w), method="bilinear"#
+                embeds, (1, embeds.shape[1], h, w), method="bilinear"
             )
             pos_embed = pos_embed.reshape(
                 -1,
@@ -508,7 +712,7 @@ class Qwen3_VisionModel(nnx.Module):
 
     def rot_pos_ids(self, h: int, w: int, spatial_merge_size: int) -> jnp.ndarray:
         """
-        生成旋转位置编码 ID (JAX 版本)
+        生成旋转位置编码 ID
         
         Args:
             h: 高度 (int)
@@ -544,54 +748,49 @@ class Qwen3_VisionModel(nnx.Module):
 
     def rot_pos_emb(self, grid_thw: list[list[int]]):
         pos_ids = []
+        # TODO (qihang) 检查多图像batch，base是否需要添加offset
         for t, h, w in grid_thw:
             base = self.rot_pos_ids(h, w, self.spatial_merge_size)  # [hw', 1] or [hw', ?]
-            pos_ids.append(base if t == 1 else jnp.repeat(base, t, axis=0))
+            pos_ids.append(base if t == 1 else jnp.tile(base, (t, 1)))
 
         pos_ids = jnp.concatenate(pos_ids, axis=0)
         max_grid_size = max(max(h, w) for _, h, w in grid_thw)
 
-        # 预先缓存的 cos/sin
-        cos, sin = self.rotary_pos_emb.get_cos_sin(max_grid_size)
+        freqfreq_tables = self.rotary_pos_emb(max_grid_size)
+        embeddings = freqfreq_tables[pos_ids]
+        embeddings = embeddings.reshape(embeddings.shape[0], -1)
+        return embeddings
 
-        # 等价于 cos[pos_ids] / sin[pos_ids]
-        cos_combined = jnp.take(cos, pos_ids, axis=0).reshape(pos_ids.shape[0], -1)
-        sin_combined = jnp.take(sin, pos_ids, axis=0).reshape(pos_ids.shape[0], -1)
+    def compute_cu_seqlens_from_grid(self, grid_thw: tuple[tuple[int, int,
+                                                           int]]) -> jax.Array:
+        seqlens_list = []
+        # Python 循环 (编译时展开)
+        for t, h, w in grid_thw:
+            # 计算每一项的空间长度
+            spatial_len = h * w
+            
+            # 如果 t > 1，我们需要重复 t 次 spatial_len
+            # 如果 t 是 Python int，jnp.full/repeat 产生的形状是静态的
+            if t > 1:
+                # 生成 [spatial_len, spatial_len, ...] 长度为 t
+                chunk = jnp.full((t,), spatial_len, dtype=jnp.int32)
+            else:
+                chunk = jnp.array([spatial_len], dtype=jnp.int32)
+                
+            seqlens_list.append(chunk)
 
-        return cos_combined, sin_combined
+        # 1. 拼接: [L1, L2, L3...] -> [Total_Frames]
+        all_lengths = jnp.concatenate(seqlens_list, axis=0)
 
-
-    def compute_cu_seqlens_from_grid(self, grid_thw: jnp.ndarray) -> jnp.ndarray:
-        """
-        Compute cu_seqlens from grid_thw using JAX.
-        
-        Args:
-            grid_thw: [N, 3] array. columns: [repeat_count (t), H, W]
-        Returns:
-            cu_seqlens: 1D int32 array, shape [Sum(t) + 1]
-        """
-        # 1. 计算每一项的空间大小 (H * W)
-        spatial_sizes = grid_thw[:, 1] * grid_thw[:, 2]
-        
-        # 2. 获取重复次数 (t)
-        repeats = grid_thw[:, 0]
-
-        # 3. 重复空间大小
-        # 注意: jnp.repeat 的第二个参数如果是 JAX 数组，
-        # 会导致输出形状动态变化，这与 jax.jit 不兼容。
-        # 此函数应在 eager mode (CPU) 下运行。
-        # total_lengths 形状: [sum(repeats)]
-        all_lengths = jnp.repeat(spatial_sizes, repeats)
-
-        # 4. 累积求和
+        # 2. 累积求和
         cu_seqlens = jnp.cumsum(all_lengths, dtype=jnp.int32)
 
-        # 5. 前面补 0 (相当于 np.concatenate([zeros, ...]))
-        # jnp.pad 对应 mode='constant' 默认填 0
+        # 3. Padding (前补0)
         cu_seqlens = jnp.pad(cu_seqlens, (1, 0), constant_values=0)
 
         return cu_seqlens
-
+    
+    
     def __call__(self, x: jax.Array, grid_thw: tuple[tuple[int, int,
                                                            int]]) -> jax.Array:
         # x: pixel_values: jax.Array
@@ -610,63 +809,59 @@ class Qwen3_VisionModel(nnx.Module):
         pos_embeds = self.fast_pos_embed_interpolate(grid_thw)
         hidden_states += pos_embeds
         # 3. rope
-        # TODO (qihang) rotary_pos_emb, 
-
+        # TODO (qihang) rotary_pos_emb
         seq_len = x.shape[0]
         hidden_states = hidden_states.reshape(seq_len, -1)
-        rotary_pos_emb_cos, rotary_pos_emb_sin = self.rot_pos_emb(grid_thw.tolist())
-        cu_seqlens = self.compute_cu_seqlens_from_grid_numpy(grid_thw)
+        rotary_pos_emb = self.rot_pos_emb(jnp.array(grid_thw).tolist())
+        cu_seqlens = self.compute_cu_seqlens_from_grid(grid_thw)# check if cu_seqlens is on cpu and int32
         # TODO (qihang) 2026.1.21 cu_seqlens rebuild using jax
         # 4. deepstack
         # 5. blk forward
-        # num of patches
-        # num of images/videoes
-        num_grids = len(grid_thw)
 
-        rotary_pos_emb = []
-        window_index = []
-        cu_window_seqlens = [jnp.array([0], dtype=jnp.int32)]
-        cu_seqlens = []
+        # rotary_pos_emb = []
+        # window_index = []
+        # cu_window_seqlens = [jnp.array([0], dtype=jnp.int32)]
+        # cu_seqlens = []
 
-        window_index_id = 0
-        cu_window_seqlens_last = 0
-        for t, h, w in grid_thw:
+        # window_index_id = 0
+        # cu_window_seqlens_last = 0
+        # for t, h, w in grid_thw:
 
-            llm_h = h // self.spatial_merge_size
-            llm_w = w // self.spatial_merge_size
+        #     llm_h = h // self.spatial_merge_size
+        #     llm_w = w // self.spatial_merge_size
 
-            (
-                rotary_pos_emb_thw,
-                window_index_thw,
-                cu_seqlens_window_thw,
-                cu_seqlens_thw,
-            ) = self.get_rope_by_thw(t, h, w)
+        #     (
+        #         rotary_pos_emb_thw,
+        #         window_index_thw,
+        #         cu_seqlens_window_thw,
+        #         cu_seqlens_thw,
+        #     ) = self.get_rope_by_thw(t, h, w)
 
-            window_index.append(window_index_thw + window_index_id)
-            window_index_id += (t * llm_h * llm_w)
+        #     window_index.append(window_index_thw + window_index_id)
+        #     window_index_id += (t * llm_h * llm_w)
 
-            cu_seqlens_window_thw += cu_window_seqlens_last
-            cu_window_seqlens_last = cu_seqlens_window_thw[-1]
-            cu_window_seqlens.append(cu_seqlens_window_thw)
+        #     cu_seqlens_window_thw += cu_window_seqlens_last
+        #     cu_window_seqlens_last = cu_seqlens_window_thw[-1]
+        #     cu_window_seqlens.append(cu_seqlens_window_thw)
 
-            rotary_pos_emb.append(rotary_pos_emb_thw)
+        #     rotary_pos_emb.append(rotary_pos_emb_thw)
 
-            cu_seqlens.append(cu_seqlens_thw)
+        #     cu_seqlens.append(cu_seqlens_thw)
 
-        rotary_pos_emb = jnp.concatenate(rotary_pos_emb, axis=0)
-        window_index = jnp.concatenate(window_index, axis=0)
-        cu_window_seqlens = jnp.concatenate(cu_window_seqlens, axis=0)
+        # rotary_pos_emb = jnp.concatenate(rotary_pos_emb, axis=0)
+        # window_index = jnp.concatenate(window_index, axis=0)
+        # cu_window_seqlens = jnp.concatenate(cu_window_seqlens, axis=0)
 
-        cu_seqlens = jnp.concatenate(cu_seqlens, axis=0)
-        cu_seqlens = jnp.cumsum(cu_seqlens, axis=0, dtype=jnp.int32)
-        cu_seqlens = jnp.pad(cu_seqlens, ((1, 0), ),
-                             mode='constant',
-                             constant_values=0)
+        # cu_seqlens = jnp.concatenate(cu_seqlens, axis=0)
+        # cu_seqlens = jnp.cumsum(cu_seqlens, axis=0, dtype=jnp.int32)
+        # cu_seqlens = jnp.pad(cu_seqlens, ((1, 0), ),
+        #                      mode='constant',
+        #                      constant_values=0)
 
-        hidden_states = hidden_states.reshape(
-            seq_len // self.spatial_merge_unit, self.spatial_merge_unit, -1)
-        hidden_states = hidden_states[window_index, :, :]
-        hidden_states = hidden_states.reshape(seq_len, -1)
+        # hidden_states = hidden_states.reshape(
+        #     seq_len // self.spatial_merge_unit, self.spatial_merge_unit, -1)
+        # hidden_states = hidden_states[window_index, :, :]
+        # hidden_states = hidden_states.reshape(seq_len, -1)
         hidden_states = jnp.expand_dims(hidden_states, axis=1)
 
         for layer_num, blk in enumerate(self.blocks):
@@ -697,7 +892,8 @@ def test_qwen3_vision_model():
     model = Qwen3_VisionModel(
         config=config,
         dtype=jnp.bfloat16,
-        rngs=rngs
+        rngs=rngs,
+        mesh=mesh
     )
 
     dummy_x = jnp.ones((14080, 1536), dtype=jnp.bfloat16)
