@@ -28,7 +28,7 @@ from sgl_jax.srt.utils.weight_utils import WeightLoader, WeightMapping
 from sgl_jax.utils import logger
 from sgl_jax.srt.kernels.flash_attention import flash_attention
 from sgl_jax.srt.models.qwen2_5_vl import Qwen2_5_VisionAttention
-
+from sgl_jax.srt.configs.model_config import ModelConfig
 
 
 #---VisionEncoder
@@ -873,23 +873,23 @@ class Qwen3_VLForConditionalGeneration(nnx.Module):
             mesh=mesh,
         )
         # TODO (qihang) LLM Model
-        self.model = Qwen2Model(
-            config=config,
-            dtype=dtype,
-            mesh=mesh,
-        )
+        # self.model = Qwen2Model(
+        #     config=config,
+        #     dtype=dtype,
+        #     mesh=mesh,
+        # )
 
-        self.lm_head = ParallelLMHead(
-            config.vocab_size,
-            config.hidden_size,
-            dtype=dtype,
-            param_dtype=dtype,
-            kernel_axes=("tensor", None),
-        )
+        # self.lm_head = ParallelLMHead(
+        #     config.vocab_size,
+        #     config.hidden_size,
+        #     dtype=dtype,
+        #     param_dtype=dtype,
+        #     kernel_axes=("tensor", None),
+        # )
 
-        self.is_mrope_enabled = "mrope_section" in config.rope_scaling
+        # self.is_mrope_enabled = "mrope_section" in config.rope_scaling
 
-        self.logits_processor = LogitsProcessor(config.vocab_size, mesh=mesh)
+        # self.logits_processor = LogitsProcessor(config.vocab_size, mesh=mesh)
 
     def pad_input_ids(self, input_ids: List[int], mm_inputs: MultimodalInputs):
         pattern = MultiModalityDataPaddingPatternMultimodalTokens()
@@ -1264,10 +1264,21 @@ class Qwen3_VLForConditionalGeneration(nnx.Module):
         return mappings
 
 
-EntryClass = [Qwen2_5_VLForConditionalGeneration]
+EntryClass = [Qwen3_VLForConditionalGeneration]
 
 #--- Encoder Test code
 
 
 if __name__ == "__main__":
-    test_qwen3_vision_model()
+    # Test Vision Model
+    # test_qwen3_vision_model()
+    import numpy as np
+    config = Qwen3VLConfig()
+    devices = jax.devices() 
+    mesh = Mesh(np.array(devices).reshape((1, 1)), ("data", "tensor"), axis_types=(jax.sharding.AxisType.Explicit, jax.sharding.AxisType.Explicit))
+    jax.set_mesh(mesh)
+    model = Qwen3_VLForConditionalGeneration(Qwen3VLConfig(), dtype=jnp.bfloat16, mesh=mesh)
+    print("Model initialized successfully.")
+    model.load_weights(model_config=ModelConfig(model_path="/home/wqh/projects/Qwen3-VL/model_dir"))
+    print("Load Weight successfully.")
+
