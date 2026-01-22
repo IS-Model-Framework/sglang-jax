@@ -43,7 +43,8 @@ dependencies = [
     "partial_json_parser",
     "pathwaysutils",
     "torchvision",
-    "lmms_eval"
+    "lmms_eval",
+    "jax[tpu]==0.8.1",
 ]
 
 [project.optional-dependencies]

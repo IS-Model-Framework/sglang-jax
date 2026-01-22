@@ -5,7 +5,7 @@ from transformers.models.qwen3_vl.configuration_qwen3_vl import Qwen3VLConfig,Qw
 from transformers import modeling_flax_utils
 import jax
 import jax.numpy as jnp
-from jax.sharding import Mesh
+from jax.sharding import Mesh, NamedSharding
 from jax.sharding import PartitionSpec as P
 from jax.experimental import shard_map
 from flax import nnx
@@ -438,12 +438,24 @@ class Qwen3_VisionPatchMerger(nnx.Module):
             params_dtype=dtype,
             mesh=mesh,
         )
+        self.mesh = mesh
 
     def __call__(self, x: jax.Array) -> jax.Array:
         if self.use_postshuffle_norm:
-            x = self.ln_q(x.reshape(-1, self.hidden_size))
+            x = self.ln_q(
+                    jax.lax.reshape(
+                        x, 
+                        (x.shape[0] * x.shape[1] * x.shape[2] // self.hidden_size, self.hidden_size),
+                        out_sharding = P("data", "tensor")
+                    )
+                ) 
         else:
-            x = self.ln_q(x).reshape(-1, self.hidden_size)
+            x = self.ln_q(x)
+            x = jax.lax.reshape(
+                        x, 
+                        (x.shape[0] * x.shape[1] * x.shape[2] // self.hidden_size, self.hidden_size),
+                        out_sharding = P("data", "tensor")
+                    )
         x = self.mlp_fc1(x)[0]
         x = self.mlp_act(x)
         x = self.mlp_fc2(x)[0]
@@ -764,28 +776,20 @@ class Qwen3_VisionModel(nnx.Module):
     def compute_cu_seqlens_from_grid(self, grid_thw: tuple[tuple[int, int,
                                                            int]]) -> jax.Array:
         seqlens_list = []
-        # Python 循环 (编译时展开)
         for t, h, w in grid_thw:
-            # 计算每一项的空间长度
             spatial_len = h * w
             
-            # 如果 t > 1，我们需要重复 t 次 spatial_len
-            # 如果 t 是 Python int，jnp.full/repeat 产生的形状是静态的
             if t > 1:
-                # 生成 [spatial_len, spatial_len, ...] 长度为 t
                 chunk = jnp.full((t,), spatial_len, dtype=jnp.int32)
             else:
                 chunk = jnp.array([spatial_len], dtype=jnp.int32)
                 
             seqlens_list.append(chunk)
 
-        # 1. 拼接: [L1, L2, L3...] -> [Total_Frames]
         all_lengths = jnp.concatenate(seqlens_list, axis=0)
 
-        # 2. 累积求和
         cu_seqlens = jnp.cumsum(all_lengths, dtype=jnp.int32)
 
-        # 3. Padding (前补0)
         cu_seqlens = jnp.pad(cu_seqlens, (1, 0), constant_values=0)
 
         return cu_seqlens
@@ -793,89 +797,34 @@ class Qwen3_VisionModel(nnx.Module):
     
     def __call__(self, x: jax.Array, grid_thw: tuple[tuple[int, int,
                                                            int]]) -> jax.Array:
-        # x: pixel_values: jax.Array
-        # """Shape:
-        # `(num_patches, num_channels * patch_size * patch_size)`
-        # """
-
-        # grid_thw: image_grid_thw: jax.Array
-        # """Shape: `(num_images, 3)`
-        # This should be in `(grid_t, grid_h, grid_w)` format.
-        # """
-
         # 1. patchembed
         hidden_states = self.patch_embed(x)
         # 2. abs pos embed
         pos_embeds = self.fast_pos_embed_interpolate(grid_thw)
         hidden_states += pos_embeds
         # 3. rope
-        # TODO (qihang) rotary_pos_emb
+        # NOTE (qihang) 重构 rotary pos emb | cu_seqlens，参考SGLang、Transformers
         seq_len = x.shape[0]
         hidden_states = hidden_states.reshape(seq_len, -1)
         rotary_pos_emb = self.rot_pos_emb(jnp.array(grid_thw).tolist())
         cu_seqlens = self.compute_cu_seqlens_from_grid(grid_thw)# check if cu_seqlens is on cpu and int32
-        # TODO (qihang) 2026.1.21 cu_seqlens rebuild using jax
         # 4. deepstack
+        num_deepstack_captured = 0
+        deepstack_feature_lists = []
         # 5. blk forward
-
-        # rotary_pos_emb = []
-        # window_index = []
-        # cu_window_seqlens = [jnp.array([0], dtype=jnp.int32)]
-        # cu_seqlens = []
-
-        # window_index_id = 0
-        # cu_window_seqlens_last = 0
-        # for t, h, w in grid_thw:
-
-        #     llm_h = h // self.spatial_merge_size
-        #     llm_w = w // self.spatial_merge_size
-
-        #     (
-        #         rotary_pos_emb_thw,
-        #         window_index_thw,
-        #         cu_seqlens_window_thw,
-        #         cu_seqlens_thw,
-        #     ) = self.get_rope_by_thw(t, h, w)
-
-        #     window_index.append(window_index_thw + window_index_id)
-        #     window_index_id += (t * llm_h * llm_w)
-
-        #     cu_seqlens_window_thw += cu_window_seqlens_last
-        #     cu_window_seqlens_last = cu_seqlens_window_thw[-1]
-        #     cu_window_seqlens.append(cu_seqlens_window_thw)
-
-        #     rotary_pos_emb.append(rotary_pos_emb_thw)
-
-        #     cu_seqlens.append(cu_seqlens_thw)
-
-        # rotary_pos_emb = jnp.concatenate(rotary_pos_emb, axis=0)
-        # window_index = jnp.concatenate(window_index, axis=0)
-        # cu_window_seqlens = jnp.concatenate(cu_window_seqlens, axis=0)
-
-        # cu_seqlens = jnp.concatenate(cu_seqlens, axis=0)
-        # cu_seqlens = jnp.cumsum(cu_seqlens, axis=0, dtype=jnp.int32)
-        # cu_seqlens = jnp.pad(cu_seqlens, ((1, 0), ),
-        #                      mode='constant',
-        #                      constant_values=0)
-
-        # hidden_states = hidden_states.reshape(
-        #     seq_len // self.spatial_merge_unit, self.spatial_merge_unit, -1)
-        # hidden_states = hidden_states[window_index, :, :]
-        # hidden_states = hidden_states.reshape(seq_len, -1)
         hidden_states = jnp.expand_dims(hidden_states, axis=1)
-
         for layer_num, blk in enumerate(self.blocks):
             hidden_states = blk(hidden_states,
                                 rotary_pos_emb=rotary_pos_emb,
                                 cu_seqlens=cu_seqlens,
                                 use_fullattn=True)
-          
-
-        # adapter
-        hidden_states = rotary_pos_embmerger(hidden_states)
-        reverse_indices = jnp.argsort(window_index)
-        hidden_states = hidden_states[reverse_indices, :]
-        return hidden_states
+            if layer_num in self.deepstack_visual_indexes:
+                deepstack_feature = self.deepstack_merger_list[num_deepstack_captured](hidden_states)
+                deepstack_feature_lists.append(deepstack_feature)
+                num_deepstack_captured += 1
+        hidden_states = self.merger(hidden_states)
+        results = jnp.concatenate([hidden_states] + deepstack_feature_lists, axis=0)
+        return results
 #---LLMDecoder
 
 #---Model
@@ -884,6 +833,8 @@ def test_qwen3_vision_model():
     import numpy as np
 
     config = Qwen3VLConfig()
+
+
     devices = jax.devices() 
     mesh = Mesh(np.array(devices).reshape((1, 1)), ("data", "tensor"), axis_types=(jax.sharding.AxisType.Explicit, jax.sharding.AxisType.Explicit))
     jax.set_mesh(mesh)
@@ -895,7 +846,7 @@ def test_qwen3_vision_model():
         rngs=rngs,
         mesh=mesh
     )
-
+    # 强制将数据按照该策略放置到设备上
     dummy_x = jnp.ones((14080, 1536), dtype=jnp.bfloat16)
     
     grid_thw = ((4, 80, 44),) 
