@@ -446,7 +446,7 @@ class Qwen3_VisionPatchMerger(nnx.Module):
                     jax.lax.reshape(
                         x, 
                         (x.shape[0] * x.shape[1] * x.shape[2] // self.hidden_size, self.hidden_size),
-                        out_sharding = P("data", "tensor")
+                        out_sharding = P(None, "tensor")
                     )
                 ) 
         else:
@@ -454,7 +454,7 @@ class Qwen3_VisionPatchMerger(nnx.Module):
             x = jax.lax.reshape(
                         x, 
                         (x.shape[0] * x.shape[1] * x.shape[2] // self.hidden_size, self.hidden_size),
-                        out_sharding = P("data", "tensor")
+                        out_sharding = P(None, "tensor")
                     )
         x = self.mlp_fc1(x)[0]
         x = self.mlp_act(x)
@@ -825,16 +825,10 @@ class Qwen3_VisionModel(nnx.Module):
         hidden_states = self.merger(hidden_states)
         results = jnp.concatenate([hidden_states] + deepstack_feature_lists, axis=0)
         return results
-#---LLMDecoder
 
-#---Model
 def test_qwen3_vision_model():
-    from jax.experimental import mesh_utils
     import numpy as np
-
     config = Qwen3VLConfig()
-
-
     devices = jax.devices() 
     mesh = Mesh(np.array(devices).reshape((1, 1)), ("data", "tensor"), axis_types=(jax.sharding.AxisType.Explicit, jax.sharding.AxisType.Explicit))
     jax.set_mesh(mesh)
@@ -846,14 +840,434 @@ def test_qwen3_vision_model():
         rngs=rngs,
         mesh=mesh
     )
-    # 强制将数据按照该策略放置到设备上
+    # 模拟某一视频输入的shape
     dummy_x = jnp.ones((14080, 1536), dtype=jnp.bfloat16)
     
     grid_thw = ((4, 80, 44),) 
     
-    print("正在运行 Forward...")
+    print("Forwarding...")
     output = model(dummy_x, grid_thw)
-    print(f"✅ Forward 运行成功! 输出形状: {output.shape}")
+    print(f"✅ Forward is done! 输出形状: {output.shape}")
+#---LLMDecoder
+
+#---Model
+class Qwen3_VLForConditionalGeneration(nnx.Module):
+
+    def __init__(
+        self,
+        config: Qwen3VLConfig,
+        dtype: jnp.dtype = jnp.bfloat16,
+        mesh: Mesh = None,
+    ) -> None:
+
+        self.config = config
+        self.rng = nnx.Rngs(params=0)
+        self.dtype = dtype
+        self.mesh = mesh
+
+        self.visual = Qwen3_VisionModel(
+            config=config,
+            norm_eps=getattr(config, "rms_norm_eps", 1e-6),
+            dtype=dtype,
+            rngs=self.rng,
+            mesh=mesh,
+        )
+        # TODO (qihang) LLM Model
+        self.model = Qwen2Model(
+            config=config,
+            dtype=dtype,
+            mesh=mesh,
+        )
+
+        self.lm_head = ParallelLMHead(
+            config.vocab_size,
+            config.hidden_size,
+            dtype=dtype,
+            param_dtype=dtype,
+            kernel_axes=("tensor", None),
+        )
+
+        self.is_mrope_enabled = "mrope_section" in config.rope_scaling
+
+        self.logits_processor = LogitsProcessor(config.vocab_size, mesh=mesh)
+
+    def pad_input_ids(self, input_ids: List[int], mm_inputs: MultimodalInputs):
+        pattern = MultiModalityDataPaddingPatternMultimodalTokens()
+        return pattern.pad_input_tokens(input_ids, mm_inputs)
+
+    def get_image_feature(self, items: List[MultimodalDataItem]) -> jax.Array:
+        # in qwen-vl, last dim is the same
+        pixel_values = jnp.concatenate([item.feature for item in items], axis=0).astype(
+            self.visual.dtype
+        )
+        image_grid_thw = jnp.concatenate([item.image_grid_thw for item in items], axis=0)
+        assert pixel_values.ndim == 2, pixel_values.ndim
+        assert image_grid_thw.ndim == 2, image_grid_thw.ndim
+        image_embeds = self.visual(pixel_values, grid_thw=image_grid_thw)
+        return image_embeds
+
+    def get_video_feature(self, items: List[MultimodalDataItem]) -> jax.Array:
+        # in qwen-vl, last dim is the same
+        pixel_values = jnp.concatenate([item.feature for item in items], axis=0).astype(
+            self.visual.dtype
+        )
+        video_grid_thw = jnp.concatenate([item.video_grid_thw for item in items], axis=0)
+        assert pixel_values.ndim == 2, pixel_values.ndim
+        assert video_grid_thw.ndim == 2, video_grid_thw.ndim
+        video_embeds = self.visual(pixel_values, grid_thw=video_grid_thw)
+        return video_embeds
+
+    def get_input_embeddings(self):
+        return self.model.embed_tokens
+
+    def __call__(
+        self,
+        forward_batch: ForwardBatch,
+        token_to_kv_pool: KVCache,
+        logits_metadata: LogitsMetadata,
+    ):
+        """Run forward pass for Qwen2_5-VL.
+
+        Args:
+            input_ids: Flattened (concatenated) input_ids corresponding to a
+                batch.
+            positions: Flattened (concatenated) position ids corresponding to a
+                batch.
+                **NOTE**: If mrope is enabled (default setting for Qwen2-VL
+                opensource models), the shape will be `(3, seq_len)`,
+                otherwise it will be `(seq_len,).
+                (Use input_metadata.mrope_positions to replace it)
+        """
+        if self.is_mrope_enabled:
+            positions = forward_batch.mrope_positions
+
+        if not (
+            forward_batch.forward_mode.is_decode()
+            or not forward_batch.contains_image_inputs()
+        ):
+            if self.is_mrope_enabled:
+                assert positions.ndim == 2 and positions.shape[0] == 3, (
+                    "multimodal section rotary embedding requires "
+                    f"(3, seq_len) positions, but got {positions.shape}"
+                )
+
+        hidden_states, layers_kv_fused, layers_callback_flag = general_mm_embed_routine(
+            forward_batch=forward_batch,
+            language_model=self.model,
+            token_to_kv_pool=token_to_kv_pool,
+            multimodal_model=self,
+            positions=positions
+        )
+        
+        return self.logits_processor(hidden_states, self.lm_head, logits_metadata), layers_kv_fused, layers_callback_flag
+
+    def load_weights(self, model_config):
+        """Load weights for Qwen2.5-VL model.
+        
+        Args:
+            model_config: Model configuration containing model path and settings
+        """
+        loader = WeightLoader(
+            model=self,
+            model_config=model_config,
+            mesh=self.mesh,
+            dtype=self.dtype,
+        )
+        
+        weight_mappings = self._create_qwen2_5_vl_weight_mappings()
+        
+        loader.load_weights_from_safetensors(weight_mappings)
+        
+        if getattr(self.config, "tie_word_embeddings", False):
+            self.lm_head.embedding = self.model.embed_tokens.embedding
+            logger.info("Tied word embeddings: lm_head's weights are now tied to embed_tokens'.")
+        
+        logger.info("Qwen2.5-VL weights loaded successfully!")
+
+    def _create_qwen2_5_vl_weight_mappings(self) -> dict:
+        """Create weight mappings for Qwen2.5-VL model.
+        
+        Returns:
+            Dictionary mapping HuggingFace weight names to model parameter paths
+        """        
+        mappings = {}
+        
+        # Vision transformer weights
+        mappings.update(self._create_vision_transformer_mappings())
+        
+        # Language model embeddings
+        mappings["model.embed_tokens.weight"] = WeightMapping(
+            target_path="model.embed_tokens.embedding",
+            sharding=("tensor", None),
+            transpose=False,
+        )
+        
+        # Language model norm
+        mappings["model.norm.weight"] = WeightMapping(
+            target_path="model.norm.scale",
+            sharding=(None,),
+            transpose=False,
+        )
+        
+        # LM head
+        if not getattr(self.config, "tie_word_embeddings", False):
+            mappings["lm_head.weight"] = WeightMapping(
+                target_path="lm_head.embedding",
+                sharding=("tensor", None),
+                transpose=False,
+            )
+        
+        # Language model layers
+        num_layers = self.config.num_hidden_layers
+        for layer_idx in range(num_layers):
+            layer_mappings = self._create_layer_mappings(layer_idx)
+            mappings.update(layer_mappings)
+        
+        return mappings
+    
+    def _create_vision_transformer_mappings(self) -> dict:
+        """Create weight mappings for the vision transformer.
+        
+        Returns:
+            Dictionary mapping vision transformer weight names to model paths
+        """        
+        mappings = {}
+        
+        # Vision embeddings
+        mappings["visual.patch_embed.proj.weight"] = WeightMapping(
+            target_path="visual.patch_embed.proj.kernel",
+            sharding=(None, None, None, None, "tensor"),
+            transpose=False,
+            transpose_dims=(2, 3, 4, 1, 0),
+        )
+        
+        # Note: In the model definition, use_bias=False is set for the proj Conv layer
+        # So we don't need to map the bias parameter
+        
+        # Add merger mappings
+        mappings["visual.merger.ln_q.weight"] = WeightMapping(
+            target_path="visual.merger.ln_q.scale",
+            sharding=(None,),
+            transpose=False,
+        )
+        mappings["visual.merger.mlp.0.weight"] = WeightMapping(
+            target_path="visual.merger.mlp_fc1.weight",
+            sharding=(None, "tensor"),
+            transpose=True,
+        )
+        mappings["visual.merger.mlp.0.bias"] = WeightMapping(
+            target_path="visual.merger.mlp_fc1.bias",
+            sharding=("tensor",),
+            transpose=False,
+        )
+        mappings["visual.merger.mlp.2.weight"] = WeightMapping(
+            target_path="visual.merger.mlp_fc2.weight",
+            sharding=("tensor", None),
+            transpose=True,
+        )
+        mappings["visual.merger.mlp.2.bias"] = WeightMapping(
+            target_path="visual.merger.mlp_fc2.bias",
+            sharding=(None,),
+            transpose=False,
+        )
+        
+        # Vision transformer layers
+        if hasattr(self.config, "vision_config"):
+            num_vision_layers = getattr(self.config.vision_config, "depth", 0)
+            for layer_idx in range(num_vision_layers):
+                vision_layer_mappings = self._create_vision_layer_mappings(layer_idx)
+                mappings.update(vision_layer_mappings)
+        
+        return mappings
+    
+    def _create_vision_layer_mappings(self, layer_idx: int) -> dict:
+        """Create weight mappings for a single vision transformer layer.
+        
+        Args:
+            layer_idx: Index of the vision layer
+            
+        Returns:
+            Dictionary mapping vision layer weight names to model paths
+        """
+        from sgl_jax.srt.utils.weight_utils import WeightMapping
+        
+        prefix = f"visual.blocks.{layer_idx}"
+        target_prefix = f"visual.blocks.{layer_idx}"
+        
+        mappings = {
+            # Attention norm
+            f"{prefix}.norm1.weight": WeightMapping(
+                target_path=f"{target_prefix}.norm1.scale",
+                sharding=(None,),
+                transpose=False,
+            ),
+            # Attention QKV projection
+            f"{prefix}.attn.qkv.weight": WeightMapping(
+                target_path=f"{target_prefix}.attn.qkv_proj.weight",
+                sharding=(None, "tensor"),
+                transpose=True,
+            ),
+            f"{prefix}.attn.qkv.bias": WeightMapping(
+                target_path=f"{target_prefix}.attn.qkv_proj.bias",
+                sharding=("tensor",),
+                transpose=False,
+            ),
+            # Attention output projection
+            f"{prefix}.attn.proj.weight": WeightMapping(
+                target_path=f"{target_prefix}.attn.o_proj.weight",
+                sharding=("tensor", None),
+                transpose=True,
+            ),
+            f"{prefix}.attn.proj.bias": WeightMapping(
+                target_path=f"{target_prefix}.attn.o_proj.bias",
+                sharding=(None,),
+                transpose=False,
+            ),
+            # MLP norm
+            f"{prefix}.norm2.weight": WeightMapping(
+                target_path=f"{target_prefix}.norm2.scale",
+                sharding=(None,),
+                transpose=False,
+            ),
+            # MLP gate projection
+            f"{prefix}.mlp.gate_proj.weight": WeightMapping(
+                target_path=f"{target_prefix}.mlp.gate_proj.weight",
+                sharding=(None, "tensor"),
+                transpose=True,
+            ),
+            f"{prefix}.mlp.gate_proj.bias": WeightMapping(
+                target_path=f"{target_prefix}.mlp.gate_proj.bias",
+                sharding=("tensor",),
+                transpose=False,
+            ),
+            # MLP up projection
+            f"{prefix}.mlp.up_proj.weight": WeightMapping(
+                target_path=f"{target_prefix}.mlp.up_proj.weight",
+                sharding=(None, "tensor"),
+                transpose=True,
+            ),
+            f"{prefix}.mlp.up_proj.bias": WeightMapping(
+                target_path=f"{target_prefix}.mlp.up_proj.bias",
+                sharding=("tensor",),
+                transpose=False,
+            ),
+            # MLP down projection
+            f"{prefix}.mlp.down_proj.weight": WeightMapping(
+                target_path=f"{target_prefix}.mlp.down_proj.weight",
+                sharding=("tensor", None),
+                transpose=True,
+            ),
+            f"{prefix}.mlp.down_proj.bias": WeightMapping(
+                target_path=f"{target_prefix}.mlp.down_proj.bias",
+                sharding=(None,),
+                transpose=False,
+            ),
+        }
+        
+        return mappings
+    
+    def _create_layer_mappings(self, layer_idx: int) -> dict:
+        """Create weight mappings for a single language model layer.
+        
+        Args:
+            layer_idx: Index of the layer
+            
+        Returns:
+            Dictionary mapping layer weight names to model paths
+        """        
+        prefix = f"model.layers.{layer_idx}"
+        target_prefix = f"model.layers.{layer_idx}"
+        
+        mappings = {
+            f"{prefix}.input_layernorm.weight": WeightMapping(
+                target_path=f"{target_prefix}.input_layernorm.scale",
+                sharding=(None,),
+                transpose=False,
+            ),
+            f"{prefix}.post_attention_layernorm.weight": WeightMapping(
+                target_path=f"{target_prefix}.post_attention_layernorm.scale",
+                sharding=(None,),
+                transpose=False,
+            ),
+            f"{prefix}.self_attn.q_proj.weight": WeightMapping(
+                target_path=f"{target_prefix}.self_attn.q_proj.weight",
+                sharding=(None, "tensor"),
+                transpose=True,
+                head_dim_padding=True,
+                kv_head_padding=False,
+            ),
+            f"{prefix}.self_attn.k_proj.weight": WeightMapping(
+                target_path=f"{target_prefix}.self_attn.k_proj.weight",
+                sharding=(None, "tensor"),
+                transpose=True,
+                head_dim_padding=True,
+                kv_head_padding=True,
+            ),
+            f"{prefix}.self_attn.v_proj.weight": WeightMapping(
+                target_path=f"{target_prefix}.self_attn.v_proj.weight",
+                sharding=(None, "tensor"),
+                transpose=True,
+                head_dim_padding=True,
+                kv_head_padding=True,
+            ),
+            f"{prefix}.self_attn.o_proj.weight": WeightMapping(
+                target_path=f"{target_prefix}.self_attn.o_proj.weight",
+                sharding=("tensor", None),
+                transpose=True,
+                head_dim_padding=True,
+                kv_head_padding=False,
+            ),
+            f"{prefix}.mlp.gate_proj.weight": WeightMapping(
+                target_path=f"{target_prefix}.mlp.gate_proj.weight",
+                sharding=(None, "tensor"),
+                transpose=True,
+            ),
+            f"{prefix}.mlp.up_proj.weight": WeightMapping(
+                target_path=f"{target_prefix}.mlp.up_proj.weight",
+                sharding=(None, "tensor"),
+                transpose=True,
+            ),
+            f"{prefix}.mlp.down_proj.weight": WeightMapping(
+                target_path=f"{target_prefix}.mlp.down_proj.weight",
+                sharding=("tensor", None),
+                transpose=True,
+            ),
+        }
+        
+        # Add bias mappings if attention_bias is enabled
+        if getattr(self.config, "attention_bias", True):
+            bias_mappings = {
+                f"{prefix}.self_attn.q_proj.bias": WeightMapping(
+                    target_path=f"{target_prefix}.self_attn.q_proj.bias",
+                    sharding=("tensor",),
+                    transpose=False,
+                    head_dim_padding=True,
+                    kv_head_padding=False,
+                ),
+                f"{prefix}.self_attn.k_proj.bias": WeightMapping(
+                    target_path=f"{target_prefix}.self_attn.k_proj.bias",
+                    sharding=("tensor",),
+                    transpose=False,
+                    head_dim_padding=True,
+                    kv_head_padding=True,
+                ),
+                f"{prefix}.self_attn.v_proj.bias": WeightMapping(
+                    target_path=f"{target_prefix}.self_attn.v_proj.bias",
+                    sharding=("tensor",),
+                    transpose=False,
+                    head_dim_padding=True,
+                    kv_head_padding=True,
+                ),
+            }
+            mappings.update(bias_mappings)
+        
+        return mappings
+
+
+EntryClass = [Qwen2_5_VLForConditionalGeneration]
+
+#--- Encoder Test code
+
 
 if __name__ == "__main__":
     test_qwen3_vision_model()
