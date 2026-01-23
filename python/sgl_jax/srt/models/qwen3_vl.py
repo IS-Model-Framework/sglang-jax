@@ -962,7 +962,7 @@ class Qwen3_VLForConditionalGeneration(nnx.Module):
         return self.logits_processor(hidden_states, self.lm_head, logits_metadata), layers_kv_fused, layers_callback_flag
 
     def load_weights(self, model_config):
-        """Load weights for Qwen2.5-VL model.
+        """Load weights for Qwen3-VL model.
         
         Args:
             model_config: Model configuration containing model path and settings
@@ -974,7 +974,7 @@ class Qwen3_VLForConditionalGeneration(nnx.Module):
             dtype=self.dtype,
         )
         
-        weight_mappings = self._create_qwen2_5_vl_weight_mappings()
+        weight_mappings = self._create_qwen3_vl_weight_mappings()
         
         loader.load_weights_from_safetensors(weight_mappings)
         
@@ -982,10 +982,10 @@ class Qwen3_VLForConditionalGeneration(nnx.Module):
             self.lm_head.embedding = self.model.embed_tokens.embedding
             logger.info("Tied word embeddings: lm_head's weights are now tied to embed_tokens'.")
         
-        logger.info("Qwen2.5-VL weights loaded successfully!")
+        logger.info("Qwen3-VL weights loaded successfully!")
 
-    def _create_qwen2_5_vl_weight_mappings(self) -> dict:
-        """Create weight mappings for Qwen2.5-VL model.
+    def _create_qwen3_vl_weight_mappings(self) -> dict:
+        """Create weight mappings for Qwen3-VL model.
         
         Returns:
             Dictionary mapping HuggingFace weight names to model parameter paths
@@ -995,33 +995,33 @@ class Qwen3_VLForConditionalGeneration(nnx.Module):
         # Vision transformer weights
         mappings.update(self._create_vision_transformer_mappings())
         
-        # Language model embeddings
-        mappings["model.embed_tokens.weight"] = WeightMapping(
-            target_path="model.embed_tokens.embedding",
-            sharding=("tensor", None),
-            transpose=False,
-        )
+        # # Language model embeddings
+        # mappings["model.embed_tokens.weight"] = WeightMapping(
+        #     target_path="model.embed_tokens.embedding",
+        #     sharding=("tensor", None),
+        #     transpose=False,
+        # )
         
-        # Language model norm
-        mappings["model.norm.weight"] = WeightMapping(
-            target_path="model.norm.scale",
-            sharding=(None,),
-            transpose=False,
-        )
+        # # Language model norm
+        # mappings["model.norm.weight"] = WeightMapping(
+        #     target_path="model.norm.scale",
+        #     sharding=(None,),
+        #     transpose=False,
+        # )
         
-        # LM head
-        if not getattr(self.config, "tie_word_embeddings", False):
-            mappings["lm_head.weight"] = WeightMapping(
-                target_path="lm_head.embedding",
-                sharding=("tensor", None),
-                transpose=False,
-            )
+        # # LM head
+        # if not getattr(self.config, "tie_word_embeddings", False):
+        #     mappings["lm_head.weight"] = WeightMapping(
+        #         target_path="lm_head.embedding",
+        #         sharding=("tensor", None),
+        #         transpose=False,
+        #     )
         
-        # Language model layers
-        num_layers = self.config.num_hidden_layers
-        for layer_idx in range(num_layers):
-            layer_mappings = self._create_layer_mappings(layer_idx)
-            mappings.update(layer_mappings)
+        # # Language model layers
+        # num_layers = self.config.num_hidden_layers
+        # for layer_idx in range(num_layers):
+        #     layer_mappings = self._create_layer_mappings(layer_idx)
+        #     mappings.update(layer_mappings)
         
         return mappings
     
@@ -1279,6 +1279,11 @@ if __name__ == "__main__":
     jax.set_mesh(mesh)
     model = Qwen3_VLForConditionalGeneration(Qwen3VLConfig(), dtype=jnp.bfloat16, mesh=mesh)
     print("Model initialized successfully.")
-    model.load_weights(model_config=ModelConfig(model_path="/home/wqh/projects/Qwen3-VL/model_dir"))
+    '''
+    Model_path:
+    (qihang)local_dir: /home/wqh/projects/Qwen3-VL/model_dir
+    TPU remote_dir: /models/Qwen3-VL/Qwen3-VL-8B-Thinking      ---if use Qwen3-VL-8B-Thinking   
+    '''
+    model.load_weights(model_config=ModelConfig(model_path="/models/Qwen3-VL/Qwen3-VL-8B-Thinking"))
     print("Load Weight successfully.")
 

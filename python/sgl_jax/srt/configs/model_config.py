@@ -523,6 +523,7 @@ multimodal_model_archs = [
     "Qwen2AudioForConditionalGeneration",
     "Qwen2VLForConditionalGeneration",
     "Qwen2_5_VLForConditionalGeneration",
+    "Qwen3_VLForConditionalGeneration",
     "KimiVLForConditionalGeneration",
     "InternVLChatModel",
     "Phi4MMForCausalLM",
