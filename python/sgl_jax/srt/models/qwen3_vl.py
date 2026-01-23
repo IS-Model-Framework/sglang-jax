@@ -27,7 +27,6 @@ from sgl_jax.srt.model_executor.forward_batch_info import ForwardBatch
 from sgl_jax.srt.utils.weight_utils import WeightLoader, WeightMapping
 from sgl_jax.utils import logger
 from sgl_jax.srt.kernels.flash_attention import flash_attention
-from sgl_jax.srt.models.qwen2_5_vl import Qwen2_5_VisionAttention
 from sgl_jax.srt.configs.model_config import ModelConfig
 
 
@@ -108,7 +107,7 @@ class Qwen3_VisionMLP(nnx.Module):
             mesh: Mesh = None
     ):
 
-        self.up_proj = LinearBase(
+        self.linear_fc1 = LinearBase(
             hidden_size,
             intermediate_size,
             kernel_axes=(None, "tensor"),
@@ -116,7 +115,7 @@ class Qwen3_VisionMLP(nnx.Module):
             params_dtype=dtype,
             mesh=mesh,
         )
-        self.down_proj = LinearBase(
+        self.linear_fc2 = LinearBase(
             intermediate_size,
             hidden_size,
             kernel_axes=("tensor", None),
@@ -127,8 +126,8 @@ class Qwen3_VisionMLP(nnx.Module):
         self.act_fn = modeling_flax_utils.ACT2FN["gelu_pytorch_tanh"]
 
     def __call__(self, x: jax.Array) -> jax.Array:
-        up = self.up_proj(x)[0]
-        output = self.down_proj(self.act_fn(up))[0]
+        up = self.linear_fc1(x)[0]
+        output = self.linear_fc2(self.act_fn(up))[0]
         return output
     
 class Qwen3_VLVisionPatchEmbed(nnx.Module):
@@ -413,7 +412,7 @@ class Qwen3_VisionPatchMerger(nnx.Module):
     ):
         self.hidden_size = config.hidden_size * (config.spatial_merge_size ** 2)
         self.use_postshuffle_norm = use_postshuffle_norm
-        self.ln_q = nnx.LayerNorm(
+        self.norm = nnx.LayerNorm(
             self.hidden_size if self.use_postshuffle_norm else config.hidden_size,
             dtype=dtype,
             rngs=rngs,
@@ -421,7 +420,7 @@ class Qwen3_VisionPatchMerger(nnx.Module):
                 nnx.initializers.uniform(),
                 (None, )
             ))
-        self.mlp_fc1 = LinearBase(
+        self.linear_fc1 = LinearBase(
             self.hidden_size,
             self.hidden_size,
             kernel_axes=(None, "tensor"),
@@ -429,8 +428,8 @@ class Qwen3_VisionPatchMerger(nnx.Module):
             params_dtype=dtype,
             mesh=mesh,
         )
-        self.mlp_act = modeling_flax_utils.ACT2FN["gelu"]
-        self.mlp_fc2 = LinearBase(
+        self.act_fn = modeling_flax_utils.ACT2FN["gelu"]
+        self.linear_fc2 = LinearBase(
             self.hidden_size,
             config.out_hidden_size,
             kernel_axes=("tensor", None),
@@ -442,7 +441,7 @@ class Qwen3_VisionPatchMerger(nnx.Module):
 
     def __call__(self, x: jax.Array) -> jax.Array:
         if self.use_postshuffle_norm:
-            x = self.ln_q(
+            x = self.norm(
                     jax.lax.reshape(
                         x, 
                         (x.shape[0] * x.shape[1] * x.shape[2] // self.hidden_size, self.hidden_size),
@@ -450,15 +449,15 @@ class Qwen3_VisionPatchMerger(nnx.Module):
                     )
                 ) 
         else:
-            x = self.ln_q(x)
+            x = self.norm(x)
             x = jax.lax.reshape(
                         x, 
                         (x.shape[0] * x.shape[1] * x.shape[2] // self.hidden_size, self.hidden_size),
                         out_sharding = P(None, "tensor")
                     )
-        x = self.mlp_fc1(x)[0]
-        x = self.mlp_act(x)
-        x = self.mlp_fc2(x)[0]
+        x = self.linear_fc1(x)[0]
+        x = self.act_fn(x)
+        x = self.linear_fc2(x)[0]
         return x
     
 
@@ -851,7 +850,9 @@ def test_qwen3_vision_model():
 #---LLMDecoder
 
 #---Model
-class Qwen3_VLForConditionalGeneration(nnx.Module):
+
+# TODO (qihang) Qwen3-VL Model, diff from Qwen2-VL
+class Qwen3VLModel(nnx.Module):
 
     def __init__(
         self,
@@ -873,23 +874,15 @@ class Qwen3_VLForConditionalGeneration(nnx.Module):
             mesh=mesh,
         )
         # TODO (qihang) LLM Model
+        # self.language_model = Qwen3VLTextModel._from_config(config.text_config)
+        # self.rope_deltas = None  # cache rope_deltas here
         # self.model = Qwen2Model(
         #     config=config,
         #     dtype=dtype,
         #     mesh=mesh,
         # )
 
-        # self.lm_head = ParallelLMHead(
-        #     config.vocab_size,
-        #     config.hidden_size,
-        #     dtype=dtype,
-        #     param_dtype=dtype,
-        #     kernel_axes=("tensor", None),
-        # )
-
-        # self.is_mrope_enabled = "mrope_section" in config.rope_scaling
-
-        # self.logits_processor = LogitsProcessor(config.vocab_size, mesh=mesh)
+       
 
     def pad_input_ids(self, input_ids: List[int], mm_inputs: MultimodalInputs):
         pattern = MultiModalityDataPaddingPatternMultimodalTokens()
@@ -925,6 +918,7 @@ class Qwen3_VLForConditionalGeneration(nnx.Module):
         forward_batch: ForwardBatch,
         token_to_kv_pool: KVCache,
         logits_metadata: LogitsMetadata,
+        logits_processor: LogitsProcessor
     ):
         """Run forward pass for Qwen2_5-VL.
 
@@ -959,7 +953,56 @@ class Qwen3_VLForConditionalGeneration(nnx.Module):
             positions=positions
         )
         
-        return self.logits_processor(hidden_states, self.lm_head, logits_metadata), layers_kv_fused, layers_callback_flag
+        return logits_processor(hidden_states, self.lm_head, logits_metadata), layers_kv_fused, layers_callback_flag
+
+
+class Qwen3VLForConditionalGeneration(nnx.Module):
+
+    def __init__(
+        self,
+        config: Qwen3VLConfig,
+        dtype: jnp.dtype = jnp.bfloat16,
+        mesh: Mesh = None,
+    ) -> None:
+
+        self.config = config
+        self.rng = nnx.Rngs(params=0)
+        self.dtype = dtype
+        self.mesh = mesh
+        self.model = Qwen3VLModel(self.config)
+        # TODO (qihang) LLM LM_Head必须放在这里
+        # self.lm_head = ParallelLMHead(
+        #     config.vocab_size,
+        #     config.hidden_size,
+        #     dtype=dtype,
+        #     param_dtype=dtype,
+        #     kernel_axes=("tensor", None),
+        # )
+
+        self.is_mrope_enabled = "mrope_section" in config.rope_scaling
+
+        self.logits_processor = LogitsProcessor(config.vocab_size, mesh=mesh)
+
+
+    def pad_input_ids(self, input_ids: List[int], mm_inputs: MultimodalInputs):
+        return self.model.pad_input_ids(input_ids, mm_inputs)
+
+    def get_image_feature(self, items: List[MultimodalDataItem]) -> jax.Array:
+        return self.model.get_image_feature(items)
+
+    def get_video_feature(self, items: List[MultimodalDataItem]) -> jax.Array:
+        return self.model.get_video_feature(items)
+
+    def get_input_embeddings(self):
+        return self.model.embed_tokens
+
+    def __call__(
+        self,
+        forward_batch: ForwardBatch,
+        token_to_kv_pool: KVCache,
+        logits_metadata: LogitsMetadata,
+    ):
+        return self.model(forward_batch, token_to_kv_pool, logits_metadata, self.logits_processor)
 
     def load_weights(self, model_config):
         """Load weights for Qwen3-VL model.
@@ -978,9 +1021,9 @@ class Qwen3_VLForConditionalGeneration(nnx.Module):
         
         loader.load_weights_from_safetensors(weight_mappings)
         
-        if getattr(self.config, "tie_word_embeddings", False):
-            self.lm_head.embedding = self.model.embed_tokens.embedding
-            logger.info("Tied word embeddings: lm_head's weights are now tied to embed_tokens'.")
+        # if getattr(self.config, "tie_word_embeddings", False):
+        #     self.lm_head.embedding = self.model.embed_tokens.embedding
+        #     logger.info("Tied word embeddings: lm_head's weights are now tied to embed_tokens'.")
         
         logger.info("Qwen3-VL weights loaded successfully!")
 
@@ -1034,43 +1077,89 @@ class Qwen3_VLForConditionalGeneration(nnx.Module):
         mappings = {}
         
         # Vision embeddings
-        mappings["visual.patch_embed.proj.weight"] = WeightMapping(
-            target_path="visual.patch_embed.proj.kernel",
+        mappings["model.visual.patch_embed.proj.weight"] = WeightMapping(
+            target_path="model.visual.patch_embed.proj.kernel",
             sharding=(None, None, None, None, "tensor"),
             transpose=False,
             transpose_dims=(2, 3, 4, 1, 0),
         )
-        
-        # Note: In the model definition, use_bias=False is set for the proj Conv layer
-        # So we don't need to map the bias parameter
-        
+        mappings["model.visual.patch_embed.proj.bias"] = WeightMapping(
+            target_path="model.visual.patch_embed.proj.bias",
+            sharding=(None,),
+            transpose=False,
+            transpose_dims=(0),
+        )
+        # pos embed 
+        mappings["model.visual.pos_embed.weight"] = WeightMapping(
+            target_path="model.visual.pos_embed.embedding",
+            sharding=(None, "tensor"),
+            transpose=False,
+            transpose_dims=(0),
+        )
+        # NOTE (qihang) Qwen3VL use bias = true
         # Add merger mappings
-        mappings["visual.merger.ln_q.weight"] = WeightMapping(
-            target_path="visual.merger.ln_q.scale",
+        mappings["model.visual.merger.norm.weight"] = WeightMapping(
+            target_path="model.visual.merger.norm.scale",
             sharding=(None,),
             transpose=False,
         )
-        mappings["visual.merger.mlp.0.weight"] = WeightMapping(
-            target_path="visual.merger.mlp_fc1.weight",
+        mappings["model.visual.merger.norm.bias"] = WeightMapping(
+            target_path="model.visual.merger.norm.bias",
+            sharding=(None,),
+            transpose=False,
+        )
+        mappings["model.visual.merger.linear_fc1.weight"] = WeightMapping(
+            target_path="model.visual.merger.linear_fc1.weight",
             sharding=(None, "tensor"),
             transpose=True,
         )
-        mappings["visual.merger.mlp.0.bias"] = WeightMapping(
-            target_path="visual.merger.mlp_fc1.bias",
+        mappings["model.visual.merger.linear_fc1.bias"] = WeightMapping(
+            target_path="model.visual.merger.linear_fc1.bias",
             sharding=("tensor",),
             transpose=False,
         )
-        mappings["visual.merger.mlp.2.weight"] = WeightMapping(
-            target_path="visual.merger.mlp_fc2.weight",
+        mappings["model.visual.merger.linear_fc2.weight"] = WeightMapping(
+            target_path="model.visual.merger.linear_fc2.weight",
             sharding=("tensor", None),
             transpose=True,
         )
-        mappings["visual.merger.mlp.2.bias"] = WeightMapping(
-            target_path="visual.merger.mlp_fc2.bias",
+        mappings["model.visual.merger.linear_fc2.bias"] = WeightMapping(
+            target_path="model.visual.merger.linear_fc2.bias",
             sharding=(None,),
             transpose=False,
         )
-        
+        # DeepStack
+        for i in range(3):
+            mappings[f"model.visual.deepstack_merger_list.{i}.linear_fc1.weight"] = WeightMapping(
+                target_path=f"model.visual.deepstack_merger_list.{i}.linear_fc1.weight",
+                sharding=("tensor", None),
+                transpose=False,
+            )
+            mappings[f"model.visual.deepstack_merger_list.{i}.linear_fc1.bias"] = WeightMapping(
+                target_path=f"model.visual.deepstack_merger_list.{i}.linear_fc1.bias",
+                sharding=("tensor",),
+                transpose=False,
+            )
+            mappings[f"model.visual.deepstack_merger_list.{i}.linear_fc2.weight"] = WeightMapping(
+                target_path=f"model.visual.deepstack_merger_list.{i}.linear_fc2.weight",
+                sharding=("tensor", None),
+                transpose=False,
+            )
+            mappings[f"model.visual.deepstack_merger_list.{i}.linear_fc2.bias"] = WeightMapping(
+                target_path=f"model.visual.deepstack_merger_list.{i}.linear_fc2.bias",
+                sharding=(None,),
+                transpose=False,
+            )
+            mappings[f"model.visual.deepstack_merger_list.{i}.norm.weight"] = WeightMapping(
+                target_path=f"model.visual.deepstack_merger_list.{i}.norm.scale",
+                sharding=(None,),
+                transpose=False,
+            )
+            mappings[f"model.visual.deepstack_merger_list.{i}.norm.bias"] = WeightMapping(
+                target_path=f"model.visual.deepstack_merger_list.{i}.norm.bias",
+                sharding=(None,),
+                transpose=False,
+            )
         # Vision transformer layers
         if hasattr(self.config, "vision_config"):
             num_vision_layers = getattr(self.config.vision_config, "depth", 0)
@@ -1091,12 +1180,17 @@ class Qwen3_VLForConditionalGeneration(nnx.Module):
         """
         from sgl_jax.srt.utils.weight_utils import WeightMapping
         
-        prefix = f"visual.blocks.{layer_idx}"
-        target_prefix = f"visual.blocks.{layer_idx}"
+        prefix = f"model.visual.blocks.{layer_idx}"
+        target_prefix = f"model.visual.blocks.{layer_idx}"
         
         mappings = {
             # Attention norm
             f"{prefix}.norm1.weight": WeightMapping(
+                target_path=f"{target_prefix}.norm1.scale",
+                sharding=(None,),
+                transpose=False,
+            ),
+            f"{prefix}.norm1.bias": WeightMapping(
                 target_path=f"{target_prefix}.norm1.scale",
                 sharding=(None,),
                 transpose=False,
@@ -1129,36 +1223,30 @@ class Qwen3_VLForConditionalGeneration(nnx.Module):
                 sharding=(None,),
                 transpose=False,
             ),
-            # MLP gate projection
-            f"{prefix}.mlp.gate_proj.weight": WeightMapping(
-                target_path=f"{target_prefix}.mlp.gate_proj.weight",
-                sharding=(None, "tensor"),
-                transpose=True,
-            ),
-            f"{prefix}.mlp.gate_proj.bias": WeightMapping(
-                target_path=f"{target_prefix}.mlp.gate_proj.bias",
-                sharding=("tensor",),
+            f"{prefix}.norm2.bias": WeightMapping(
+                target_path=f"{target_prefix}.norm2.scale",
+                sharding=(None,),
                 transpose=False,
             ),
             # MLP up projection
-            f"{prefix}.mlp.up_proj.weight": WeightMapping(
-                target_path=f"{target_prefix}.mlp.up_proj.weight",
+            f"{prefix}.mlp.linear_fc1.weight": WeightMapping(
+                target_path=f"{target_prefix}.mlp.linear_fc1.weight",
                 sharding=(None, "tensor"),
                 transpose=True,
             ),
-            f"{prefix}.mlp.up_proj.bias": WeightMapping(
-                target_path=f"{target_prefix}.mlp.up_proj.bias",
+            f"{prefix}.mlp.linear_fc1.bias": WeightMapping(
+                target_path=f"{target_prefix}.mlp.linear_fc1.bias",
                 sharding=("tensor",),
                 transpose=False,
             ),
             # MLP down projection
-            f"{prefix}.mlp.down_proj.weight": WeightMapping(
-                target_path=f"{target_prefix}.mlp.down_proj.weight",
+            f"{prefix}.mlp.linear_fc2.weight": WeightMapping(
+                target_path=f"{target_prefix}.mlp.linear_fc2.weight",
                 sharding=("tensor", None),
                 transpose=True,
             ),
-            f"{prefix}.mlp.down_proj.bias": WeightMapping(
-                target_path=f"{target_prefix}.mlp.down_proj.bias",
+            f"{prefix}.mlp.linear_fc2.bias": WeightMapping(
+                target_path=f"{target_prefix}.mlp.linear_fc2.bias",
                 sharding=(None,),
                 transpose=False,
             ),
@@ -1175,8 +1263,8 @@ class Qwen3_VLForConditionalGeneration(nnx.Module):
         Returns:
             Dictionary mapping layer weight names to model paths
         """        
-        prefix = f"model.layers.{layer_idx}"
-        target_prefix = f"model.layers.{layer_idx}"
+        prefix = f"model.language_model.layers.{layer_idx}"
+        target_prefix = f"model.language_model.layers.{layer_idx}"
         
         mappings = {
             f"{prefix}.input_layernorm.weight": WeightMapping(
@@ -1264,7 +1352,7 @@ class Qwen3_VLForConditionalGeneration(nnx.Module):
         return mappings
 
 
-EntryClass = [Qwen3_VLForConditionalGeneration]
+EntryClass = [Qwen3VLForConditionalGeneration]
 
 #--- Encoder Test code
 
@@ -1277,7 +1365,7 @@ if __name__ == "__main__":
     devices = jax.devices() 
     mesh = Mesh(np.array(devices).reshape((1, 1)), ("data", "tensor"), axis_types=(jax.sharding.AxisType.Explicit, jax.sharding.AxisType.Explicit))
     jax.set_mesh(mesh)
-    model = Qwen3_VLForConditionalGeneration(Qwen3VLConfig(), dtype=jnp.bfloat16, mesh=mesh)
+    model = Qwen3VLForConditionalGeneration(Qwen3VLConfig(), dtype=jnp.bfloat16, mesh=mesh)
     print("Model initialized successfully.")
     '''
     Model_path:

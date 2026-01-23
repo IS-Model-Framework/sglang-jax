@@ -273,11 +273,11 @@ class TestModelLoaderWithRealModel(unittest.TestCase):
 
             # Create QWen model instance with mesh context
             with jax.set_mesh(self.mesh):
-                model = Qwen3VLForConditionalGeneration(
+                model = Qwen2_5_VLForConditionalGeneration(
                     model_config.hf_config, dtype=model_config.dtype, mesh=self.mesh
                 )
 
-            self.assertIsInstance(model, Qwen3VLForConditionalGeneration)
+            self.assertIsInstance(model, Qwen2_5_VLForConditionalGeneration)
             self.assertEqual(model.config, model_config.hf_config)
             self.assertEqual(model.mesh, self.mesh)
             self.assertTrue(hasattr(model, "load_weights"))
@@ -323,7 +323,7 @@ class TestModelLoaderWithRealModel(unittest.TestCase):
 
             # Create QWen model instance with mesh context
             with jax.set_mesh(self.mesh):
-                model = Qwen3VLForConditionalGeneration(
+                model = Qwen2_5_VLForConditionalGeneration(
                     model_config.hf_config, dtype=model_config.dtype, mesh=self.mesh
                 )
 
@@ -408,7 +408,7 @@ class TestModelLoaderWithRealModel(unittest.TestCase):
 
             # Create QWen model instance with mesh context
             with jax.set_mesh(self.mesh):
-                model = Qwen3VLForConditionalGeneration(
+                model = Qwen2_5_VLForConditionalGeneration(
                     model_config.hf_config, dtype=model_config.dtype, mesh=self.mesh
                 )
 
@@ -514,7 +514,7 @@ class TestModelLoaderWithRealModel(unittest.TestCase):
 
             # Create QWen model instance with mesh context
             with jax.set_mesh(self.mesh):
-                model = Qwen3VLForConditionalGeneration(
+                model = Qwen2_5_VLForConditionalGeneration(
                     model_config.hf_config, dtype=model_config.dtype, mesh=self.mesh
                 )
 
