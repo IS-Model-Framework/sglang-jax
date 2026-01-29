@@ -1,5 +1,0 @@
-# 文本文件统一使用LF
-*.txt text eol=lf
-# 排除二进制文件
-*.png binary
-*.jpg binary
