@@ -387,7 +387,7 @@ class Qwen3_VisionBlock(nnx.Module):
                                      intermediate_size=config.vision_config.intermediate_size,
                                      dtype=dtype,
                                      mesh=mesh)
-
+    @nnx.jit
     def __call__(self,
                  x: jax.Array,
                  rotary_pos_emb: jax.Array,
@@ -1112,20 +1112,18 @@ class Qwen3VLForConditionalGeneration(nnx.Module):
             target_path="model.visual.patch_embed.proj.kernel",
             sharding=(None, None, None, None, "tensor"),
             transpose=False,
-            transpose_dims=(2, 3, 4, 1, 0),
+            transpose_axes=(2, 3, 4, 1, 0),
         )
         mappings["model.visual.patch_embed.proj.bias"] = WeightMapping(
             target_path="model.visual.patch_embed.proj.bias",
             sharding=(None,),
             transpose=False,
-            transpose_dims=(0),
         )
         # pos embed 
         mappings["model.visual.pos_embed.weight"] = WeightMapping(
             target_path="model.visual.pos_embed.embedding",
             sharding=(None, "tensor"),
             transpose=False,
-            transpose_dims=(0),
         )
         # NOTE (qihang) Qwen3VL use bias = true
         # Add merger mappings
