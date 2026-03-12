@@ -14,6 +14,67 @@ def _resolve_rngs(rngs: nnx.Rngs | None) -> nnx.Rngs:
     return rngs or nnx.Rngs(0)
 
 
+def _apply_flux_rotary_emb(
+    x: jax.Array,
+    image_rotary_emb: tuple[jax.Array, jax.Array] | None,
+    use_real: bool = True,
+    use_real_unbind_dim: int = -1,
+    sequence_dim: int = 1,
+) -> jax.Array:
+    if image_rotary_emb is None:
+        return x
+    if not use_real:
+        raise NotImplementedError(
+            "Complex rotary embeddings are not implemented for Flux in sglang-jax."
+        )
+
+    cos, sin = image_rotary_emb
+    if sequence_dim == 2:
+        cos = cos[None, None, :, :]
+        sin = sin[None, None, :, :]
+    elif sequence_dim == 1:
+        cos = cos[None, :, None, :]
+        sin = sin[None, :, None, :]
+    else:
+        raise ValueError(f"`sequence_dim={sequence_dim}` but should be 1 or 2.")
+
+    cos = cos.astype(x.dtype)
+    sin = sin.astype(x.dtype)
+
+    if use_real_unbind_dim == -1:
+        x_real, x_imag = jnp.split(x.reshape(*x.shape[:-1], -1, 2), 2, axis=-1)
+        x_rotated = jnp.stack(
+            [-jnp.squeeze(x_imag, axis=-1), jnp.squeeze(x_real, axis=-1)], axis=-1
+        )
+        x_rotated = x_rotated.reshape(x.shape)
+    elif use_real_unbind_dim == -2:
+        x_real, x_imag = jnp.split(x.reshape(*x.shape[:-1], 2, -1), 2, axis=-2)
+        x_rotated = jnp.concatenate(
+            [(-x_imag).squeeze(axis=-2), x_real.squeeze(axis=-2)],
+            axis=-1,
+        )
+    else:
+        raise ValueError(f"`use_real_unbind_dim={use_real_unbind_dim}` but should be -1 or -2.")
+
+    return (x.astype(jnp.float32) * cos + x_rotated.astype(jnp.float32) * sin).astype(x.dtype)
+
+
+def _get_1d_rotary_pos_embed(
+    dim: int,
+    pos: jax.Array,
+    theta: float,
+) -> tuple[jax.Array, jax.Array]:
+    if dim % 2 != 0:
+        raise ValueError(f"Rotary dimension must be even, got dim={dim}.")
+    freqs_dtype = jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
+
+    inv_freq = 1.0 / (theta ** (jnp.arange(0, dim, 2, dtype=freqs_dtype) / dim))
+    freqs = pos.astype(freqs_dtype)[:, None] * inv_freq[None, :]
+    cos = jnp.repeat(jnp.cos(freqs), 2, axis=-1).astype(jnp.float32)
+    sin = jnp.repeat(jnp.sin(freqs), 2, axis=-1).astype(jnp.float32)
+    return cos, sin
+
+
 class Timesteps(nnx.Module):
     def __init__(
         self,
