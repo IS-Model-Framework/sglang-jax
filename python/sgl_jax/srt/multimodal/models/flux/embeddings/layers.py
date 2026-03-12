@@ -10,6 +10,10 @@ from sgl_jax.srt.layers.embeddings import Embed
 from sgl_jax.srt.layers.linear import LinearBase
 
 
+def _resolve_rngs(rngs: nnx.Rngs | None) -> nnx.Rngs:
+    return rngs or nnx.Rngs(0)
+
+
 class Timesteps(nnx.Module):
     def __init__(
         self,
@@ -48,6 +52,7 @@ class FluxTimestepEmbedding(nnx.Module):
         time_embed_dim: int,
         mesh: Mesh,
         params_dtype: jnp.dtype | None = jnp.bfloat16,
+        rngs: nnx.Rngs | None = None,
     ):
         self.linear_1 = LinearBase(
             input_size=in_channels,
@@ -82,6 +87,7 @@ class FluxTextProjection(nnx.Module):
         mesh: Mesh,
         act_fn: str = "silu",
         params_dtype: jnp.dtype | None = jnp.bfloat16,
+        rngs: nnx.Rngs | None = None,
     ):
         self.linear_1 = LinearBase(
             input_size=in_features,
@@ -117,6 +123,7 @@ class LabelEmbedding(nnx.Module):
         dropout_prob: float,
         mesh: Mesh,
         params_dtype: jnp.dtype | None = jnp.bfloat16,
+        rngs: nnx.Rngs | None = None,
     ):
         use_cfg_embedding = int(dropout_prob > 0)
         self.embedding_table = Embed(
@@ -159,13 +166,16 @@ class CombinedTimestepLabelEmbeddings(nnx.Module):
         mesh: Mesh,
         class_dropout_prob: float = 0.1,
         params_dtype: jnp.dtype | None = jnp.bfloat16,
+        rngs: nnx.Rngs | None = None,
     ):
+        _rngs = _resolve_rngs(rngs)
         self.time_proj = Timesteps(num_channels=256, flip_sin_to_cos=True, downscale_freq_shift=1)
         self.timestep_embedder = FluxTimestepEmbedding(
             in_channels=256,
             time_embed_dim=embedding_dim,
             mesh=mesh,
             params_dtype=params_dtype,
+            rngs=_rngs,
         )
         self.class_embedder = LabelEmbedding(
             num_classes=num_classes,
@@ -173,6 +183,7 @@ class CombinedTimestepLabelEmbeddings(nnx.Module):
             dropout_prob=class_dropout_prob,
             mesh=mesh,
             params_dtype=params_dtype,
+            rngs=_rngs,
         )
 
     def __call__(
@@ -196,13 +207,16 @@ class CombinedTimestepTextProjEmbeddings(nnx.Module):
         pooled_projection_dim: int,
         mesh: Mesh,
         params_dtype: jnp.dtype | None = jnp.bfloat16,
+        rngs: nnx.Rngs | None = None,
     ):
+        _rngs = _resolve_rngs(rngs)
         self.time_proj = Timesteps(num_channels=256, flip_sin_to_cos=True, downscale_freq_shift=0)
         self.timestep_embedder = FluxTimestepEmbedding(
             in_channels=256,
             time_embed_dim=embedding_dim,
             mesh=mesh,
             params_dtype=params_dtype,
+            rngs=_rngs,
         )
         self.text_embedder = FluxTextProjection(
             in_features=pooled_projection_dim,
@@ -210,6 +224,7 @@ class CombinedTimestepTextProjEmbeddings(nnx.Module):
             mesh=mesh,
             act_fn="silu",
             params_dtype=params_dtype,
+            rngs=_rngs,
         )
 
     def __call__(self, timestep: jax.Array, pooled_projection: jax.Array) -> jax.Array:
@@ -226,19 +241,23 @@ class CombinedTimestepGuidanceTextProjEmbeddings(nnx.Module):
         pooled_projection_dim: int,
         mesh: Mesh,
         params_dtype: jnp.dtype | None = jnp.bfloat16,
+        rngs: nnx.Rngs | None = None,
     ):
+        _rngs = _resolve_rngs(rngs)
         self.time_proj = Timesteps(num_channels=256, flip_sin_to_cos=True, downscale_freq_shift=0)
         self.timestep_embedder = FluxTimestepEmbedding(
             in_channels=256,
             time_embed_dim=embedding_dim,
             mesh=mesh,
             params_dtype=params_dtype,
+            rngs=_rngs,
         )
         self.guidance_embedder = FluxTimestepEmbedding(
             in_channels=256,
             time_embed_dim=embedding_dim,
             mesh=mesh,
             params_dtype=params_dtype,
+            rngs=_rngs,
         )
         self.text_embedder = FluxTextProjection(
             in_features=pooled_projection_dim,
@@ -246,6 +265,7 @@ class CombinedTimestepGuidanceTextProjEmbeddings(nnx.Module):
             mesh=mesh,
             act_fn="silu",
             params_dtype=params_dtype,
+            rngs=_rngs,
         )
 
     def __call__(
